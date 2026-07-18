@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
+  Box,
   Copy,
   Grid3x3,
   Maximize,
   Minus,
   Plus,
   RotateCw,
+  Square as SquareIcon,
   Trash2,
   ZoomIn,
   ZoomOut,
@@ -15,44 +17,14 @@ import {
 import { useStore } from '../store/useStore'
 import type { CatalogItem, PlacedItem } from '../types'
 import { Button, Field, TextInput } from '../components/ui'
+import { CHAIR, chairPositions } from '../lib/layout'
+
+const FloorPlan3D = lazy(() => import('../components/FloorPlan3D'))
 
 const MIN_PX = 6
 const MAX_PX = 40
 
-/** Chair geometry, in feet. */
-const CHAIR = { size: 1.4, gap: 0.35 }
-
-interface ChairPos {
-  x: number // feet, relative to table center (unrotated)
-  y: number
-}
-
-function chairPositions(item: Pick<PlacedItem, 'shape' | 'widthFt' | 'depthFt' | 'chairs'>): ChairPos[] {
-  const n = item.chairs
-  if (n <= 0) return []
-  const out: ChairPos[] = []
-  if (item.shape === 'round') {
-    const r = item.widthFt / 2 + CHAIR.gap + CHAIR.size / 2
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 - Math.PI / 2
-      out.push({ x: Math.cos(a) * r, y: Math.sin(a) * r })
-    }
-  } else {
-    // Distribute along the two long (top/bottom) edges.
-    const top = Math.ceil(n / 2)
-    const bottom = n - top
-    const yOff = item.depthFt / 2 + CHAIR.gap + CHAIR.size / 2
-    const place = (count: number, sign: number) => {
-      for (let i = 0; i < count; i++) {
-        const frac = (i + 1) / (count + 1)
-        out.push({ x: (frac - 0.5) * item.widthFt, y: sign * yOff })
-      }
-    }
-    place(top, -1)
-    place(bottom, 1)
-  }
-  return out
-}
+type ViewMode = '2d' | '3d'
 
 export default function FloorPlanEditorPage() {
   const { id } = useParams()
@@ -66,6 +38,7 @@ export default function FloorPlanEditorPage() {
   const [pxPerFoot, setPxPerFoot] = useState(14)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [snap, setSnap] = useState(true)
+  const [view, setView] = useState<ViewMode>('2d')
   const [dragPos, setDragPos] = useState<{ id: string; x: number; y: number } | null>(null)
 
   const svgRef = useRef<SVGSVGElement>(null)
@@ -153,6 +126,12 @@ export default function FloorPlanEditorPage() {
   }
 
   const addItem = (c: CatalogItem) => {
+    // Cascade new drops diagonally so they don't perfectly overlap.
+    const halfW = c.widthFt / 2
+    const halfH = (c.shape === 'round' ? c.widthFt : c.depthFt) / 2
+    const step = ((plan.items.length % 6) - 2.5) * 2.5
+    const clamp = (v: number, half: number, max: number) =>
+      Math.min(Math.max(v, half), max - half)
     const placed: Omit<PlacedItem, 'id'> = {
       catalogId: c.id,
       title: c.title,
@@ -161,8 +140,8 @@ export default function FloorPlanEditorPage() {
       depthFt: c.shape === 'round' ? c.widthFt : c.depthFt,
       chairs: c.chairs,
       color: c.color,
-      x: plan.roomWidthFt / 2,
-      y: plan.roomDepthFt / 2,
+      x: clamp(plan.roomWidthFt / 2 + step, halfW, plan.roomWidthFt),
+      y: clamp(plan.roomDepthFt / 2 + step, halfH, plan.roomDepthFt),
       rotation: 0,
     }
     addPlacedItem(plan.id, placed)
@@ -213,16 +192,35 @@ export default function FloorPlanEditorPage() {
         </div>
 
         <div className="ml-auto flex items-center gap-1.5">
+          {/* 2D / 3D toggle */}
+          <div className="flex items-center rounded-lg border border-slate-300 p-0.5">
+            <button
+              onClick={() => setView('2d')}
+              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+                view === '2d' ? 'bg-teal-700 text-white' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <SquareIcon size={14} /> 2D
+            </button>
+            <button
+              onClick={() => setView('3d')}
+              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+                view === '3d' ? 'bg-teal-700 text-white' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <Box size={14} /> 3D
+            </button>
+          </div>
           <button
             onClick={() => setSnap((s) => !s)}
             className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium ${
-              snap ? 'border-teal-300 bg-teal-50 text-teal-700' : 'border-slate-300 text-slate-500'
-            }`}
+              view === '3d' ? 'hidden ' : ''
+            }${snap ? 'border-teal-300 bg-teal-50 text-teal-700' : 'border-slate-300 text-slate-500'}`}
             title="Snap to 0.5ft grid"
           >
             <Grid3x3 size={14} /> Snap
           </button>
-          <div className="flex items-center rounded-lg border border-slate-300">
+          <div className={`flex items-center rounded-lg border border-slate-300 ${view === '3d' ? 'hidden' : ''}`}>
             <button
               onClick={() => setPxPerFoot((p) => Math.max(MIN_PX, p - 2))}
               className="p-1.5 text-slate-500 hover:text-slate-700"
@@ -239,7 +237,9 @@ export default function FloorPlanEditorPage() {
           </div>
           <button
             onClick={() => setPxPerFoot(14)}
-            className="rounded-lg border border-slate-300 p-1.5 text-slate-500 hover:text-slate-700"
+            className={`rounded-lg border border-slate-300 p-1.5 text-slate-500 hover:text-slate-700 ${
+              view === '3d' ? 'hidden' : ''
+            }`}
             title="Reset zoom"
           >
             <Maximize size={16} />
@@ -247,6 +247,29 @@ export default function FloorPlanEditorPage() {
         </div>
       </div>
 
+      {view === '3d' ? (
+        <div className="relative min-h-0 flex-1 bg-slate-900">
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center text-sm text-slate-300">
+                Loading 3D view…
+              </div>
+            }
+          >
+            <FloorPlan3D plan={plan} />
+          </Suspense>
+          <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-slate-800/80 px-4 py-1.5 text-xs text-slate-200 shadow-lg">
+            Drag to orbit · scroll to zoom · right-drag to pan · switch to 2D to edit
+          </div>
+          {plan.items.length === 0 && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <p className="rounded-lg bg-slate-800/80 px-4 py-2 text-sm text-slate-200">
+                No items yet — switch to 2D to place tables, then come back to 3D.
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
       <div className="flex min-h-0 flex-1">
         {/* Palette */}
         <div className="w-60 shrink-0 overflow-y-auto border-r border-slate-200 bg-white p-3">
@@ -408,6 +431,7 @@ export default function FloorPlanEditorPage() {
           )}
         </div>
       </div>
+      )}
     </div>
   )
 }

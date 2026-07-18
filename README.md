@@ -35,6 +35,13 @@ Open the printed local URL (default http://localhost:5173).
 - "Snap" locks movement to a 0.5 ft grid. Zoom with the toolbar controls.
 - Plans can be linked to an event.
 
+**2D / 3D views** — a toggle in the toolbar flips any plan between the flat 2D
+editor (where all placing/editing happens) and an orbit-controllable **3D
+walk-through** rendered from the exact same layout — ideal for presenting to
+higher-end clients. Both views share one data model, so a plan built in 2D is
+instantly viewable in 3D (drag to orbit, scroll to zoom, right-drag to pan).
+The 3D bundle is code-split and only downloads when the 3D view is opened.
+
 ### Inventory (`/inventory`)
 Pre-seeded with:
 - 6 ft rectangle table · 8 chairs and · 6 chairs
