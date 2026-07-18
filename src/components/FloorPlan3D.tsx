@@ -9,10 +9,10 @@ const CHAIR_HEIGHT = 1.6
 const WALL_HEIGHT = 8
 const deg2rad = (d: number) => (d * Math.PI) / 180
 
-function Chair({ x, z, color }: { x: number; z: number; color: string }) {
+function Chair({ x, z, rot, color }: { x: number; z: number; rot: number; color: string }) {
   const seat = CHAIR.size * 0.85
   return (
-    <group position={[x, 0, z]}>
+    <group position={[x, 0, z]} rotation={[0, rot, 0]}>
       {/* seat */}
       <mesh position={[0, CHAIR_HEIGHT * 0.5, 0]} castShadow>
         <boxGeometry args={[seat, CHAIR_HEIGHT * 0.55, seat]} />
@@ -49,7 +49,7 @@ function Item({ item, roomW, roomD }: { item: PlacedItem; roomW: number; roomD: 
         </mesh>
       )}
       {chairs.map((c, i) => (
-        <Chair key={i} x={c.x} z={c.y} color={chairColor} />
+        <Chair key={i} x={c.x} z={c.y} rot={c.rot} color={chairColor} />
       ))}
     </group>
   )

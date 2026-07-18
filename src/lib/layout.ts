@@ -7,11 +7,17 @@ export interface ChairPos {
   /** Feet, relative to the table center, before the table's rotation is applied. */
   x: number
   y: number
+  /** Yaw (radians, about the 3D Y axis) that turns the chair to face the table. */
+  rot: number
 }
 
 /**
  * Positions of the chairs around an item, in feet relative to its center.
  * For the 3D view, treat `y` as the Z axis.
+ *
+ * Rectangular tables with 7+ chairs get a banquet layout: one chair at each
+ * end (head/foot) and the rest split across the two long sides — e.g. a 6ft
+ * table with 8 chairs seats 1 + 1 ends and 3 + 3 sides.
  */
 export function chairPositions(
   item: Pick<PlacedItem, 'shape' | 'widthFt' | 'depthFt' | 'chairs'>,
@@ -23,21 +29,33 @@ export function chairPositions(
     const r = item.widthFt / 2 + CHAIR.gap + CHAIR.size / 2
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 - Math.PI / 2
-      out.push({ x: Math.cos(a) * r, y: Math.sin(a) * r })
+      out.push({
+        x: Math.cos(a) * r,
+        y: Math.sin(a) * r,
+        rot: Math.atan2(-Math.cos(a), -Math.sin(a)),
+      })
     }
   } else {
-    // Distribute along the two long (top/bottom) edges.
-    const top = Math.ceil(n / 2)
-    const bottom = n - top
     const yOff = item.depthFt / 2 + CHAIR.gap + CHAIR.size / 2
-    const place = (count: number, sign: number) => {
+    const xOff = item.widthFt / 2 + CHAIR.gap + CHAIR.size / 2
+    const placeRow = (count: number, sign: number) => {
       for (let i = 0; i < count; i++) {
         const frac = (i + 1) / (count + 1)
-        out.push({ x: (frac - 0.5) * item.widthFt, y: sign * yOff })
+        out.push({
+          x: (frac - 0.5) * item.widthFt,
+          y: sign * yOff,
+          rot: sign < 0 ? 0 : Math.PI,
+        })
       }
     }
-    place(top, -1)
-    place(bottom, 1)
+    const useEnds = n >= 7
+    const sideCount = useEnds ? n - 2 : n
+    placeRow(Math.ceil(sideCount / 2), -1)
+    placeRow(Math.floor(sideCount / 2), 1)
+    if (useEnds) {
+      out.push({ x: -xOff, y: 0, rot: Math.PI / 2 })
+      out.push({ x: xOff, y: 0, rot: -Math.PI / 2 })
+    }
   }
   return out
 }
