@@ -15,6 +15,7 @@ import {
 import { useStore } from '../store/useStore'
 import type { Vendor } from '../types'
 import { Badge, Button, EmptyState, Field, Modal, Select, TextArea, TextInput } from '../components/ui'
+import { useReadOnly } from '../components/RoleGate'
 
 export default function VendorsPage() {
   const vendors = useStore((s) => s.vendors)
@@ -25,6 +26,7 @@ export default function VendorsPage() {
   const addVendorCategory = useStore((s) => s.addVendorCategory)
   const removeVendorCategory = useStore((s) => s.removeVendorCategory)
 
+  const readOnly = useReadOnly()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
   const [editing, setEditing] = useState<Vendor | null>(null)
@@ -44,7 +46,10 @@ export default function VendorsPage() {
     })
   }, [vendors, query, filter])
 
-  const startAdd = () => setEditing(addVendor())
+  const startAdd = () => {
+    const created = addVendor()
+    if (created) setEditing(created)
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
@@ -56,10 +61,10 @@ export default function VendorsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => setCatOpen(true)}>
+          <Button variant="secondary" onClick={() => setCatOpen(true)} disabled={readOnly}>
             <Tag size={16} /> Categories
           </Button>
-          <Button onClick={startAdd}>
+          <Button onClick={startAdd} disabled={readOnly}>
             <Plus size={16} /> Add Vendor
           </Button>
         </div>
@@ -91,7 +96,7 @@ export default function VendorsPage() {
           title="No vendors yet"
           message="Add your first vendor to start building your directory."
           action={
-            <Button onClick={startAdd}>
+            <Button onClick={startAdd} disabled={readOnly}>
               <Plus size={16} /> Add Vendor
             </Button>
           }

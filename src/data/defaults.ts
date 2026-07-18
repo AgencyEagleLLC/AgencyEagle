@@ -82,6 +82,16 @@ export const DEFAULT_CATALOG: CatalogItem[] = [
     color: '#14b8a6',
     isDefault: true,
   },
+  {
+    id: 'def-selfie-station',
+    title: 'Selfie Station · 7ft Round',
+    shape: 'round',
+    widthFt: 7,
+    depthFt: 7,
+    chairs: 0,
+    color: '#f59e0b',
+    isDefault: true,
+  },
 ]
 
 export const DEFAULT_VENDOR_CATEGORIES: string[] = [

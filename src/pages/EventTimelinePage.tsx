@@ -18,6 +18,7 @@ import { Button, EmptyState, Field, Modal, Select, TextArea, TextInput } from '.
 import { buildSlots, formatDateLong, formatMin, parseTime, toTimeInput } from '../lib/time'
 import { exportGlobalTimelinePDF, exportVendorTimelinePDF } from '../lib/pdf'
 import { generateSocialPost } from '../lib/social'
+import { useReadOnly } from '../components/RoleGate'
 
 const LANE_COLORS = [
   '#0ea5e9', '#8b5cf6', '#f97316', '#22c55e', '#ec4899',
@@ -45,6 +46,7 @@ export default function EventTimelinePage() {
   const updateTimelineEntry = useStore((s) => s.updateTimelineEntry)
   const removeTimelineEntry = useStore((s) => s.removeTimelineEntry)
 
+  const readOnly = useReadOnly()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [entryModal, setEntryModal] = useState<{ mode: 'add' | 'edit'; entry?: TimelineEntry } | null>(null)
   const [socialOpen, setSocialOpen] = useState(false)
@@ -123,7 +125,7 @@ export default function EventTimelinePage() {
         <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-600">
           <Clock size={16} /> Timeline · 15-minute increments
         </h2>
-        <Button onClick={openAdd} disabled={vendors.length === 0}>
+        <Button onClick={openAdd} disabled={readOnly || vendors.length === 0}>
           <Plus size={16} /> Add Vendor Block
         </Button>
       </div>
@@ -144,7 +146,7 @@ export default function EventTimelinePage() {
           title="No timeline blocks yet"
           message="Add a vendor block to lay them onto the schedule in 15-minute increments."
           action={
-            <Button onClick={openAdd} disabled={vendors.length === 0}>
+            <Button onClick={openAdd} disabled={readOnly || vendors.length === 0}>
               <Plus size={16} /> Add Vendor Block
             </Button>
           }

@@ -4,12 +4,14 @@ import { LayoutGrid, Plus, Trash2 } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import type { FloorPlan } from '../types'
 import { Button, EmptyState, Field, Modal, Select, TextInput } from '../components/ui'
+import { useReadOnly } from '../components/RoleGate'
 
 export default function FloorPlansPage() {
   const floorPlans = useStore((s) => s.floorPlans)
   const events = useStore((s) => s.events)
   const addFloorPlan = useStore((s) => s.addFloorPlan)
   const removeFloorPlan = useStore((s) => s.removeFloorPlan)
+  const readOnly = useReadOnly()
   const navigate = useNavigate()
 
   const [open, setOpen] = useState(false)
@@ -22,6 +24,7 @@ export default function FloorPlansPage() {
       roomDepthFt: Math.max(4, draft.roomDepthFt),
       eventId: draft.eventId || null,
     })
+    if (!plan) return
     setOpen(false)
     setDraft({ name: '', roomWidthFt: 40, roomDepthFt: 30, eventId: '' })
     navigate(`/floorplans/${plan.id}`)
@@ -36,7 +39,7 @@ export default function FloorPlansPage() {
             Design a room to scale and place your inventory where you need it.
           </p>
         </div>
-        <Button onClick={() => setOpen(true)}>
+        <Button onClick={() => setOpen(true)} disabled={readOnly}>
           <Plus size={16} /> New Floor Plan
         </Button>
       </header>
@@ -47,7 +50,7 @@ export default function FloorPlansPage() {
           title="No floor plans yet"
           message="Create a plan, enter your room dimensions, and start dropping tables in."
           action={
-            <Button onClick={() => setOpen(true)}>
+            <Button onClick={() => setOpen(true)} disabled={readOnly}>
               <Plus size={16} /> New Floor Plan
             </Button>
           }

@@ -18,6 +18,7 @@ import { useStore } from '../store/useStore'
 import type { CatalogItem, PlacedItem } from '../types'
 import { Button, Field, TextInput } from '../components/ui'
 import { CHAIR, chairPositions } from '../lib/layout'
+import { useReadOnly } from '../components/RoleGate'
 
 const FloorPlan3D = lazy(() => import('../components/FloorPlan3D'))
 
@@ -35,6 +36,7 @@ export default function FloorPlanEditorPage() {
   const updatePlacedItem = useStore((s) => s.updatePlacedItem)
   const removePlacedItem = useStore((s) => s.removePlacedItem)
 
+  const readOnly = useReadOnly()
   const [pxPerFoot, setPxPerFoot] = useState(14)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [snap, setSnap] = useState(true)
@@ -281,7 +283,8 @@ export default function FloorPlanEditorPage() {
               <button
                 key={c.id}
                 onClick={() => addItem(c)}
-                className="flex w-full items-center gap-2 rounded-lg border border-slate-200 px-2.5 py-2 text-left text-sm hover:border-teal-300 hover:bg-teal-50/40"
+                disabled={readOnly}
+                className="flex w-full items-center gap-2 rounded-lg border border-slate-200 px-2.5 py-2 text-left text-sm hover:border-teal-300 hover:bg-teal-50/40 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span
                   className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-white"

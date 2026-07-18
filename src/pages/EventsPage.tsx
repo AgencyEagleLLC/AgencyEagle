@@ -5,11 +5,13 @@ import { useStore } from '../store/useStore'
 import type { EventRecord } from '../types'
 import { Button, EmptyState, Field, Modal, TextInput } from '../components/ui'
 import { formatDateLong, formatMin, parseTime } from '../lib/time'
+import { useReadOnly } from '../components/RoleGate'
 
 export default function EventsPage() {
   const events = useStore((s) => s.events)
   const addEvent = useStore((s) => s.addEvent)
   const removeEvent = useStore((s) => s.removeEvent)
+  const readOnly = useReadOnly()
   const navigate = useNavigate()
 
   const [open, setOpen] = useState(false)
@@ -35,6 +37,7 @@ export default function EventsPage() {
   const create = () => {
     if (!draft.clientName.trim() && !draft.eventName.trim()) return
     const ev = addEvent(draft)
+    if (!ev) return
     setOpen(false)
     setDraft({ clientName: '', eventName: '', date: '', startTime: '16:00', endTime: '23:00', venue: '' })
     navigate(`/events/${ev.id}`)
@@ -49,7 +52,7 @@ export default function EventsPage() {
             Grouped by client — one client can have multiple events.
           </p>
         </div>
-        <Button onClick={() => setOpen(true)}>
+        <Button onClick={() => setOpen(true)} disabled={readOnly}>
           <Plus size={16} /> New Event
         </Button>
       </header>
@@ -60,7 +63,7 @@ export default function EventsPage() {
           title="No events yet"
           message="Create an event to start building a vendor timeline."
           action={
-            <Button onClick={() => setOpen(true)}>
+            <Button onClick={() => setOpen(true)} disabled={readOnly}>
               <Plus size={16} /> New Event
             </Button>
           }

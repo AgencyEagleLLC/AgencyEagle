@@ -66,6 +66,7 @@ export function chairPositions(
  */
 export function objectHeightFt(item: Pick<PlacedItem, 'title' | 'chairs' | 'shape'>): number {
   const t = item.title.toLowerCase()
+  if (t.includes('selfie')) return 6.5
   if (t.includes('bar') || t.includes('cart')) return 3.6
   if (t.includes('dj')) return 3.2
   if (t.includes('gift')) return 2.8

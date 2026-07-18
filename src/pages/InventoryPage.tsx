@@ -3,6 +3,7 @@ import { Circle, Pencil, Plus, Square, Trash2 } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import type { CatalogItem, ItemShape } from '../types'
 import { Badge, Button, Field, Modal, Select, TextInput } from '../components/ui'
+import { useReadOnly } from '../components/RoleGate'
 
 const PALETTE = [
   '#0ea5e9', '#3b82f6', '#8b5cf6', '#a855f7', '#ec4899', '#f43f5e',
@@ -26,6 +27,7 @@ export default function InventoryPage() {
   const updateCatalogItem = useStore((s) => s.updateCatalogItem)
   const removeCatalogItem = useStore((s) => s.removeCatalogItem)
 
+  const readOnly = useReadOnly()
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState<Draft>(blank)
@@ -69,7 +71,7 @@ export default function InventoryPage() {
             Reusable furniture &amp; equipment you can drop onto any floor plan.
           </p>
         </div>
-        <Button onClick={startAdd}>
+        <Button onClick={startAdd} disabled={readOnly}>
           <Plus size={16} /> Add Item
         </Button>
       </header>
