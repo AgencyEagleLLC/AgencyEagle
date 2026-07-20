@@ -167,3 +167,47 @@ Two traditions, one counter: Italian craft, Tennessee farm.
 - **Keywords:** brogato, affogato Knoxville, gelato Talbott TN, farm
   fresh waffle cones, duck egg waffle chips, gelato catering East
   Tennessee, brodallions
+
+---
+
+## Italian theme notes
+
+Applied throughout the copy and the one-pager:
+
+- Bilingual section kickers: *Il Brogato®*, *I Brodallions®*, *Il Menu*,
+  *La Nostra Storia* — Italian first, English after, so the theme reads
+  without losing anyone.
+- Italian phrases used as mottos: *Fatto a mano* (handmade),
+  *La dolce vita, servita fredda* (the sweet life, served cold), and the
+  *affogato* = "drowned" etymology as the Brogato® hook.
+- A subtle tricolore (green/white/red) accent bar under the site header.
+- Menu voice keeps the GelatoBrothers.com authenticity markers: served at
+  true gelato temperature, Nutella swirl — never sprinkles, Italian
+  espresso machine, Madagascar vanilla.
+
+## References (source pages this content draws from)
+
+- Brogato® — build (two scoops Stracciatella + fresh-pulled crema
+  espresso) and "European sweet treat for breakfast, lunch or dinner":
+  https://gelatobrothers.com/coffee-meets-gelato-celebrate-national-coffee-day-with-gelato-brothers-brogato/
+- Flavor names and descriptions (Stracciatella, Dark Chocolate Chip,
+  Sea Salt Caramel, Pistachio; 12 unique flavors), latte flavor shots:
+  https://gelatobrothers.com/menu/knoxville-gelato-food-truck-catering/
+- Brodallions® — hand-made waffle chips baked in the Tennessee bakery
+  with fresh eggs and Madagascar vanilla:
+  https://shop.gelatobrothers.com/product/brodallions-pack-of-10-chips-60-total-free-shipping/59
+- Origin story — family summers on the European coast, bringing the
+  European way of life to East Tennessee:
+  https://gelatobrothers.com/our-story/
+- Talbott flagship bakery and tasting shop:
+  https://gelatobrothers.com/talbott-flagship/
+- Farm-fresh eggs from the family's chickens (Wilmoth farm / Cedar Pond
+  Farms) in the scratch baking:
+  https://www.citizentribune.com/lifestyles/wink_magazine/chill-bros-gelato-brothers-brings-european-sweets-to-talbott/article_77871962-2603-11e7-9412-23fa2925590f.html
+- Italian authenticity ("true to its Italian roots… Nutella swirl, never
+  sprinkles"): https://www.katom.com/learning-center/authentic-gelato-brothers.html
+- Locations — Talbott flagship (1149 US-11E A1) and West Town Mall:
+  https://gelatobrothers.com/order-online/
+
+*Note: the duck eggs detail came from Shawna directly (chickens and ducks
+on the farm) — it is not yet on the public site, which mentions chickens.*

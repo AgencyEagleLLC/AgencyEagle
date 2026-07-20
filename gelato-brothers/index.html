@@ -159,6 +159,18 @@
   footer .brand{letter-spacing:.35em;text-transform:uppercase;margin-bottom:14px}
   footer p{color:#cdbfae;font-size:.9rem;max-width:52ch;margin:0 auto 6px}
   footer a{color:var(--caramel);text-decoration:none}
+
+  .tricolore{display:flex;height:4px}
+  .tricolore span{flex:1}
+  .tricolore span:nth-child(1){background:#3d7a4b}
+  .tricolore span:nth-child(2){background:#f4efe4}
+  .tricolore span:nth-child(3){background:#b53a2e}
+  .motto{
+    font-style:italic;
+    color:var(--pistachio);
+    font-size:1.05rem;
+    margin-bottom:6px;
+  }
 </style>
 </head>
 <body>
@@ -166,6 +178,7 @@
 <header class="sans">
   <div class="brand">Gelato Brothers<small>Brew Bros Coffee · East Tennessee</small></div>
 </header>
+<div class="tricolore" aria-hidden="true"><span></span><span></span><span></span></div>
 
 <div class="hero">
   <p class="kicker sans">Small-batch gelato · Fresh-pulled espresso · Scratch-baked waffle chips</p>
@@ -181,8 +194,9 @@
 
 <section id="brogato">
   <div class="wrap prose">
-    <p class="kicker sans">Our Pour-Over Affogato</p>
+    <p class="kicker sans">Il Brogato® · Our Pour-Over Affogato</p>
     <h2>The Brogato®: an Italian classic, poured our way</h2>
+    <p class="motto">Affogato — “drowned” — the way Italy has served dessert for generations.</p>
     <p>In Italy, they call it the <em>affogato</em> — “drowned.” A scoop of
        gelato, drowned in a hot shot of espresso, eaten slowly at a marble
        counter while the whole afternoon waits for you. It’s dessert and coffee
@@ -211,8 +225,9 @@
 
 <section class="alt" id="brodallions">
   <div class="wrap prose">
-    <p class="kicker sans">Brodallions® — Our Signature Waffle Chips</p>
+    <p class="kicker sans">I Brodallions® · Our Signature Waffle Chips</p>
     <h2>Baked from scratch. Laid this morning.</h2>
+    <p class="motto">Fatto a mano — handmade, from our coop to your cone.</p>
     <p>Every Brodallion® — our signature waffle chip — starts the same way:
        with a walk out to the coop.</p>
     <p>We keep <strong>chickens and ducks right here on our family farm</strong>,
@@ -242,7 +257,7 @@
 
 <section id="menu">
   <div class="wrap">
-    <p class="kicker sans">The Menu</p>
+    <p class="kicker sans">Il Menu · The Menu</p>
     <h2>What’s at the counter</h2>
 
     <div class="menu-cat">
@@ -291,7 +306,7 @@
 
 <section class="alt" id="story">
   <div class="wrap prose">
-    <p class="kicker sans">Our Story</p>
+    <p class="kicker sans">La Nostra Storia · Our Story</p>
     <h2>Two traditions, one counter</h2>
     <p>It started with family summers on the European coast — espresso in the
        air, waffle irons going all day, gelato cases glowing like stained
@@ -312,6 +327,7 @@
   <p>Knoxville · West Town Mall</p>
   <p><a href="https://gelatobrothers.com">gelatobrothers.com</a> ·
      <a href="https://shop.gelatobrothers.com">shop.gelatobrothers.com</a></p>
+  <p style="font-style:italic;color:#a9987f">La dolce vita, servita fredda — the sweet life, served cold.</p>
   <p>Brogato® and Brodallions® are registered trademarks of Gelato Brothers.</p>
 </footer>
 
