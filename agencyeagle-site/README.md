@@ -50,5 +50,10 @@ Admin protections: CSRF tokens, session rotation, lax same-site cookies scoped t
 
 Local test: `AE_DEV=1 php -S 127.0.0.1:8080 -t public_html` (emails go to `_private/data/quiz/dev-mail.log`; `AE_SCAN_TEST_IP=127.0.0.1` points every scanned host at a local fixture server).
 
+## CRM
+`/admin/crm/` is the sales CRM: a pipeline board (New lead, Contacted, Call booked, Proposal sent, Client, Lost), a searchable contact list with CSV export, and follow-up tasks (`/admin/crm/tasks.php`). Each contact has a plan ($99/mo or $200/mo Growth), an optional $5,000 done-for-you build, a next step, notes (stage moves are logged) and tasks. The home page totals monthly recurring revenue from clients and what's open in the pipeline.
+
+AI-Ready quiz sign-ups become contacts when the CRM is opened (matched by email; their score links to the report), and contact-form messages become a contact or a note on the existing one. Data: `_private/data/crm/crm.json` on the server (not in git, never uploaded over by the deploy). Code: `_private/app/crm.php`.
+
 ## Search and AI crawlers on our own site
 `robots.txt` welcomes every crawler except in `/admin/`, `llms.txt` describes the business for AI tools, and each deploy pings IndexNow (Bing and others) with the sitemap URLs. The IndexNow key file is `public_html/b115cbcc61b8cd132c1ba96bcafa8eb8.txt`.

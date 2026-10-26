@@ -27,4 +27,12 @@ $body = "Name: $name\nEmail: $email\nPhone: $phone\n\n$message\n";
 $headers = "From: Agency Eagle Website <no-reply@agencyeagle.com>\r\nReply-To: $email\r\nContent-Type: text/plain; charset=utf-8";
 mail('sales@agencyeagle.com', 'Website inquiry from ' . $name, $body, $headers);
 
+// Also file it in the admin CRM (new contact, or a note on the one with this email).
+try {
+    require_once __DIR__ . '/../_private/app/crm.php';
+    ae_crm_inbound('contact', $name, $email, $phone, $message);
+} catch (Throwable $e) {
+    error_log('CRM inbound failed: ' . $e->getMessage()); // the email already went out
+}
+
 header('Location: /contact/thanks/');
