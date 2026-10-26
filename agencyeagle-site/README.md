@@ -7,11 +7,11 @@ The Agency Eagle website: static HTML pages plus a small PHP admin at `/admin`. 
 public_html/            everything that gets uploaded to the server's public_html
   index.html, services/, pricing/, contact/, 404.html
   contact/send.php      contact form -> sales@agencyeagle.com
-  admin/                admin sign-in (password + Google Authenticator code)
+  admin/                admin sign-in (Google first; password + authenticator backup; SSH break-glass link)
   _private/             never served (Require all denied)
-    app/                auth + TOTP code; quiz.php, site_scan.php, followups.php (AI-Ready Site Score)
-    data/               users.json and quiz/ (leads, funnel counts) live here on the server (not in git)
-    tools/              build_pages.py, check_site.py, create-admin.php
+    app/                auth (Google sign-in, password + TOTP backup); quiz.php, site_scan.php, followups.php (AI-Ready Site Score)
+    data/               oauth.conf (written by the deploy) and quiz/ (leads, funnel counts) live here on the server (not in git)
+    tools/              build_pages.py, check_site.py, create-admin.php, break-glass.php
 STANDARDS.md            the SEO/HTML rules every site must pass
 ```
 
@@ -23,14 +23,20 @@ python3 _private/tools/check_site.py .
 ```
 
 ## Deploying
-`.github/workflows/deploy-agencyeagle-site.yml` uploads `public_html/` over FTPS on every push to `master` that changes this folder. To clear out the server first (one time, when leaving WordPress), run the workflow by hand with **wipe** checked. Wiping also deletes the admin login file.
+`.github/workflows/deploy-agencyeagle-site.yml` uploads `public_html/` over FTPS on every push to `master` that changes this folder. To clear out the server first (one time, when leaving WordPress), run the workflow by hand with **wipe** checked.
 
-Secrets: `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, optional `FTP_DIR` (`public_html/` when the FTP login opens in the account home) and `ADMIN_SETUP_CODE`.
+Secrets: `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, optional `FTP_DIR` (`public_html/` when the FTP login opens in the account home), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `ADMIN_EMAILS`.
 
-## First admin
-With `ADMIN_SETUP_CODE` set, open `/admin/setup.php` after deploying, enter that code, your email and a password, and add the shown key to Google Authenticator. The page locks itself once an admin exists. With a terminal you can instead run `php _private/tools/create-admin.php you@agencyeagle.com`.
+## Admin sign-in
+`/admin` signs in with Google first. The deploy writes `_private/data/oauth.conf` from the secrets, and only the Google accounts in `ADMIN_EMAILS` (comma separated) get in.
 
-Admin protections: CSRF tokens, session rotation, strict same-site cookies scoped to /admin, 15-minute lockout after 5 failures, codes can't be reused, 30-minute idle timeout, noindex.
+Google Cloud setup, once: in Google Cloud Console create an OAuth consent screen (External, or Internal on Workspace), then **Credentials → Create credentials → OAuth client ID → Web application** with the authorized redirect URI `https://agencyeagle.com/admin/oauth-callback.php`. Put the client ID and secret in the GitHub secrets.
+
+Backup login: under "Other sign-in options" on the sign-in page, email + password + Google Authenticator code. Set it up from **Dashboard → Backup login** after signing in with Google, or over SSH with `php ~/public_html/_private/tools/create-admin.php you@example.com`.
+
+Break-glass (Google down or misconfigured): SSH in with your key and run `php ~/public_html/_private/tools/break-glass.php`. It prints a link that signs you in once within 10 minutes.
+
+Admin protections: CSRF tokens, session rotation, lax same-site cookies scoped to /admin, state + nonce + PKCE on the Google flow, 15-minute lockout after 5 failed backup logins, authenticator codes can't be reused, single-use break-glass links, 30-minute idle timeout, noindex.
 
 ## AI-Ready Site Score (lead funnel)
 `/ai-ready/` is a free quiz: name, email and website first (nothing is shown before that), then 10 questions while the server checks the site live. Score out of 100: 70 from the live check (HTTPS, robots.txt, Googlebot/Bingbot and AI crawler access, noindex, sitemap, canonical, title, description, H1, schema.org JSON-LD, llms.txt, mobile, speed, Open Graph, alt text) and 30 from 8 scored answers (Bing Webmaster Tools, Search Console, Google Business Profile, Bing Places/Apple, reviews, FAQ content, freshness, consistent NAP). The 2 unscored answers (platform, who runs the site) are for sales.

@@ -134,6 +134,14 @@ section { padding: 56px 0; }
 .auth-card label { display: block; font-weight: 600; margin: 16px 0 6px; }
 .auth-card input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); font-size: 1rem; }
 .auth-card button { margin-top: 20px; width: 100%; background: var(--brand); color: #fff; border: 0; padding: 12px; border-radius: var(--radius); font-weight: 700; font-size: 1rem; cursor: pointer; }
+.auth-google { display: block; text-align: center; }
+.auth-other { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 12px; }
+.auth-other summary { cursor: pointer; color: var(--muted); font-size: .92rem; }
+.admin-form { max-width: 380px; }
+.admin-form label { display: block; font-weight: 600; margin: 16px 0 6px; }
+.admin-form input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); font-size: 1rem; }
+.admin-form button { margin-top: 20px; background: var(--brand); color: #fff; border: 0; padding: 12px 20px; border-radius: var(--radius); font-weight: 700; font-size: 1rem; cursor: pointer; }
+.notice { background: #e8f4fb; color: var(--brand-dark); padding: 10px 12px; border-radius: var(--radius); }
 .alert { background: #fbeceb; color: var(--danger); padding: 10px 12px; border-radius: var(--radius); }
 .admin-bar { display: flex; justify-content: space-between; gap: 16px; padding: 12px 16px; background: var(--brand); color: #fff; flex-wrap: wrap; }
 .admin-bar a { color: #fff; }
