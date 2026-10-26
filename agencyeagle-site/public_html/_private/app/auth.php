@@ -1,9 +1,16 @@
 <?php
-// Admin auth: Google sign-in (OpenID Connect) limited to the allowed emails,
-// plus a one-time break-glass link that can only be issued over SSH.
-// Config lives in data/oauth.conf (written by the deploy from GitHub secrets).
+// Admin auth. Primary: Google sign-in (OpenID Connect) limited to the allowed emails.
+// Backup: password + authenticator code (users in data/users.json, set up from
+// /admin/security.php after a Google sign-in, or with tools/create-admin.php over SSH).
+// Emergency: a one-time break-glass link that can only be issued over SSH.
+// Google config lives in data/oauth.conf (written by the deploy from GitHub secrets).
 declare(strict_types=1);
 
+require_once __DIR__ . '/totp.php';
+
+const AE_USERS_FILE = __DIR__ . '/../data/users.json';
+const AE_MAX_FAILS = 5;
+const AE_LOCK_SECONDS = 900;
 const AE_OAUTH_CONF = __DIR__ . '/../data/oauth.conf';
 const AE_BREAKGLASS_FILE = __DIR__ . '/../data/breakglass.token';
 const AE_BREAKGLASS_SECONDS = 600;
@@ -133,6 +140,88 @@ function ae_google_callback(array $conf, array $query): string
     if (!in_array($email, $conf['allowed_emails'], true)) {
         return 'not_allowed';
     }
+    ae_sign_in($email);
+    return 'ok';
+}
+
+function ae_users(): array
+{
+    if (!is_file(AE_USERS_FILE)) {
+        return [];
+    }
+    return json_decode((string)file_get_contents(AE_USERS_FILE), true) ?: [];
+}
+
+function ae_save_users(array $users): void
+{
+    $tmp = AE_USERS_FILE . '.tmp';
+    file_put_contents($tmp, json_encode($users, JSON_PRETTY_PRINT), LOCK_EX);
+    chmod($tmp, 0600);
+    rename($tmp, AE_USERS_FILE);
+}
+
+function ae_locked(array $user): bool
+{
+    return ($user['locked_until'] ?? 0) > time();
+}
+
+function ae_record_fail(array &$users, string $email): void
+{
+    $users[$email]['fails'] = ($users[$email]['fails'] ?? 0) + 1;
+    if ($users[$email]['fails'] >= AE_MAX_FAILS) {
+        $users[$email]['locked_until'] = time() + AE_LOCK_SECONDS;
+        $users[$email]['fails'] = 0;
+    }
+    ae_save_users($users);
+}
+
+/** Backup login step 1: password. On success the session holds a pending user awaiting TOTP. */
+function ae_check_password(string $email, string $password): string
+{
+    $email = strtolower(trim($email));
+    $users = ae_users();
+    $user = $users[$email] ?? null;
+    if ($user === null) {
+        password_verify($password, '$2y$10$5xNHXCdGYMutI2PTO7mxP.6NiWS3jcKC5t.QIvNjfq6q71ydMFPAG'); // even out timing
+        return 'invalid';
+    }
+    if (ae_locked($user)) {
+        return 'locked';
+    }
+    if (!password_verify($password, $user['password_hash'])) {
+        ae_record_fail($users, $email);
+        return 'invalid';
+    }
+    session_regenerate_id(true);
+    $_SESSION['pending_email'] = $email;
+    $_SESSION['pending_at'] = time();
+    return 'ok';
+}
+
+/** Backup login step 2: authenticator code. */
+function ae_check_totp(string $code): string
+{
+    $email = $_SESSION['pending_email'] ?? null;
+    if ($email === null || time() - ($_SESSION['pending_at'] ?? 0) > 300) {
+        unset($_SESSION['pending_email'], $_SESSION['pending_at']);
+        return 'expired';
+    }
+    $users = ae_users();
+    $user = $users[$email] ?? null;
+    if ($user === null || ae_locked($user)) {
+        return 'locked';
+    }
+    $step = totp_verify($user['totp_secret'], $code);
+    if ($step === null || $step <= ($user['totp_last_step'] ?? -1)) {
+        ae_record_fail($users, $email);
+        return 'invalid';
+    }
+    $users[$email]['totp_last_step'] = $step;
+    $users[$email]['fails'] = 0;
+    $users[$email]['last_login'] = gmdate('c');
+    ae_save_users($users);
+
+    unset($_SESSION['pending_email'], $_SESSION['pending_at']);
     ae_sign_in($email);
     return 'ok';
 }
