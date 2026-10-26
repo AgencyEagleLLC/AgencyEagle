@@ -74,6 +74,7 @@ jobs:
             **/.git*/**
             _private/data/*.json
             _private/data/quiz/**
+            _private/data/crm/**
             _private/data/breakglass.token
 
       # Tell Bing (and the other IndexNow engines) the pages changed, instead of waiting for a crawl.
