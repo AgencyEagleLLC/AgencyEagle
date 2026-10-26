@@ -14,6 +14,9 @@ name: Deploy agencyeagle.com
 #   GOOGLE_CLIENT_ID      OAuth client (Web application) from Google Cloud Console
 #   GOOGLE_CLIENT_SECRET  its secret
 #   ADMIN_EMAILS          Google account(s) allowed into /admin, comma separated
+#   WHM_USER              WHM login that owns the API token (root or a reseller)
+#   WHM_API_TOKEN         WHM API token, ideally limited to list-accts and ssl-info
+#   WHM_HOST              optional; defaults to host.agencyeagle.com
 
 on:
   push:
@@ -57,6 +60,22 @@ jobs:
                   json.dump(conf, f)
           else:
               print("Google sign-in secrets not set; /admin will show setup instructions.")
+          PY
+
+      - name: Write WHM config
+        env:
+          WHM_HOST: ${{ secrets.WHM_HOST }}
+          WHM_USER: ${{ secrets.WHM_USER }}
+          WHM_API_TOKEN: ${{ secrets.WHM_API_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          if os.environ["WHM_USER"] and os.environ["WHM_API_TOKEN"]:
+              with open("agencyeagle-site/public_html/_private/data/whm.conf", "w") as f:
+                  json.dump({"host": os.environ["WHM_HOST"] or "host.agencyeagle.com",
+                             "user": os.environ["WHM_USER"], "token": os.environ["WHM_API_TOKEN"]}, f)
+          else:
+              print("WHM secrets not set; /admin/sites.php will show setup instructions.")
           PY
 
       - name: Upload over FTPS
