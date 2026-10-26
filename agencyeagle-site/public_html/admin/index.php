@@ -10,34 +10,20 @@ if (!empty($_SESSION['admin_email'])) {
     exit;
 }
 
-$error = '';
-$stage = empty($_SESSION['pending_email']) ? 'password' : 'code';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!ae_check_csrf()) {
-        $error = 'Your session expired. Please try again.';
-    } elseif ($stage === 'password') {
-        $result = ae_check_password((string)($_POST['email'] ?? ''), (string)($_POST['password'] ?? ''));
-        if ($result === 'ok') {
-            $stage = 'code';
-        } else {
-            $error = $result === 'locked' ? 'Too many attempts. Try again in 15 minutes.' : 'Email or password is incorrect.';
-        }
-    } else {
-        $result = ae_check_totp((string)($_POST['code'] ?? ''));
-        if ($result === 'ok') {
-            header('Location: /admin/dashboard.php');
-            exit;
-        }
-        if ($result === 'expired') {
-            $stage = 'password';
-            $error = 'That took too long. Sign in again.';
-        } else {
-            $error = $result === 'locked' ? 'Too many attempts. Try again in 15 minutes.' : 'That code did not match. Use the newest code in your authenticator app.';
-        }
-    }
+$conf = ae_oauth_conf();
+if ($conf !== null && isset($_GET['go'])) {
+    header('Location: ' . ae_google_login_url($conf));
+    exit;
 }
-$csrf = ae_csrf_token();
+
+$errors = [
+    'expired' => 'That sign-in took too long or was opened in another tab. Try again.',
+    'cancelled' => 'Google sign-in was cancelled.',
+    'google' => 'Google sign-in failed. Try again.',
+    'not_allowed' => 'That Google account is not allowed to use this admin.',
+    'breakglass' => 'That emergency link is invalid, used or expired.',
+];
+$error = $errors[$_GET['error'] ?? ''] ?? '';
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -51,20 +37,11 @@ $csrf = ae_csrf_token();
 <main class="auth-card">
   <h1>Agency Eagle Admin</h1>
   <?php if ($error !== ''): ?><p class="alert" role="alert"><?= htmlspecialchars($error) ?></p><?php endif; ?>
-  <form method="post" autocomplete="on">
-    <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>">
-    <?php if ($stage === 'password'): ?>
-      <label for="email">Email</label>
-      <input id="email" name="email" type="email" autocomplete="username" required autofocus>
-      <label for="password">Password</label>
-      <input id="password" name="password" type="password" autocomplete="current-password" required>
-      <button type="submit">Continue</button>
-    <?php else: ?>
-      <label for="code">6-digit code from Google Authenticator</label>
-      <input id="code" name="code" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required autofocus>
-      <button type="submit">Sign in</button>
-    <?php endif; ?>
-  </form>
+  <?php if ($conf === null): ?>
+    <p>Google sign-in is not set up yet. Add the GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and ADMIN_EMAILS secrets in GitHub and redeploy.</p>
+  <?php else: ?>
+    <p><a class="button" href="/admin/?go=1">Sign in with Google</a></p>
+  <?php endif; ?>
 </main>
 </body>
 </html>

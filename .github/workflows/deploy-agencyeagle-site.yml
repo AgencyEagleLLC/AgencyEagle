@@ -4,14 +4,16 @@ name: Deploy agencyeagle.com
 # - Every push to master that touches agencyeagle-site/ syncs changed files.
 # - Run it by hand (Actions > Deploy agencyeagle.com > Run workflow) with "wipe"
 #   checked to delete EVERYTHING in public_html first. Use that once, for the
-#   switch away from WordPress. Wiping also deletes the admin login file.
+#   switch away from WordPress.
 #
 # Repository secrets (Settings > Secrets and variables > Actions):
 #   FTP_SERVER        e.g. host.agencyeagle.com
 #   FTP_USERNAME      FTP account whose home is public_html
 #   FTP_PASSWORD
 #   FTP_DIR           optional; "public_html/" if the FTP login opens in the account home
-#   ADMIN_SETUP_CODE  optional; long random code that unlocks /admin/setup.php once
+#   GOOGLE_CLIENT_ID      OAuth client (Web application) from Google Cloud Console
+#   GOOGLE_CLIENT_SECRET  its secret
+#   ADMIN_EMAILS          Google account(s) allowed into /admin, comma separated
 
 on:
   push:
@@ -37,13 +39,25 @@ jobs:
       - name: Check site against standards
         run: python3 agencyeagle-site/public_html/_private/tools/check_site.py agencyeagle-site/public_html
 
-      - name: Add one-time admin setup code
+      - name: Write Google sign-in config
         env:
-          ADMIN_SETUP_CODE: ${{ secrets.ADMIN_SETUP_CODE }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
         run: |
-          if [ -n "$ADMIN_SETUP_CODE" ]; then
-            printf '%s' "$ADMIN_SETUP_CODE" > agencyeagle-site/public_html/_private/data/setup.code
-          fi
+          python3 - <<'PY'
+          import json, os
+          conf = {
+              "client_id": os.environ["GOOGLE_CLIENT_ID"],
+              "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
+              "allowed_emails": [e.strip() for e in os.environ["ADMIN_EMAILS"].split(",") if e.strip()],
+          }
+          if all(conf.values()):
+              with open("agencyeagle-site/public_html/_private/data/oauth.conf", "w") as f:
+                  json.dump(conf, f)
+          else:
+              print("Google sign-in secrets not set; /admin will show setup instructions.")
+          PY
 
       - name: Upload over FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -60,6 +74,7 @@ jobs:
             **/.git*/**
             _private/data/*.json
             _private/data/quiz/**
+            _private/data/breakglass.token
 
       # Tell Bing (and the other IndexNow engines) the pages changed, instead of waiting for a crawl.
       # The key is public by design: it is served at /<key>.txt.
