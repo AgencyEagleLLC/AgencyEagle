@@ -1,0 +1,2 @@
+# Admin pages: never cache, never index.
+Header always set X-Robots-Tag "noindex, nofollow"

@@ -1,0 +1,6 @@
+# Search engines and AI assistants are welcome. Only the admin area is off limits.
+User-agent: *
+Disallow: /admin/
+Disallow: /_private/
+
+Sitemap: https://agencyeagle.com/sitemap.xml

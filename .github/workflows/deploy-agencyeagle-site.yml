@@ -1,0 +1,74 @@
+name: Deploy agencyeagle.com
+
+# Publishes agencyeagle-site/public_html to the server's public_html over FTPS.
+# - Every push to master that touches agencyeagle-site/ syncs changed files.
+# - Run it by hand (Actions > Deploy agencyeagle.com > Run workflow) with "wipe"
+#   checked to delete EVERYTHING in public_html first. Use that once, for the
+#   switch away from WordPress. Wiping also deletes the admin login file.
+#
+# Repository secrets (Settings > Secrets and variables > Actions):
+#   FTP_SERVER        e.g. host.agencyeagle.com
+#   FTP_USERNAME      FTP account whose home is public_html
+#   FTP_PASSWORD
+#   FTP_DIR           optional; "public_html/" if the FTP login opens in the account home
+#   ADMIN_SETUP_CODE  optional; long random code that unlocks /admin/setup.php once
+
+on:
+  push:
+    branches: [master]
+    paths: ['agencyeagle-site/**', '.github/workflows/deploy-agencyeagle-site.yml']
+  workflow_dispatch:
+    inputs:
+      wipe:
+        description: 'Delete everything in public_html before uploading'
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-agencyeagle-site
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check site against standards
+        run: python3 agencyeagle-site/public_html/_private/tools/check_site.py agencyeagle-site/public_html
+
+      - name: Add one-time admin setup code
+        env:
+          ADMIN_SETUP_CODE: ${{ secrets.ADMIN_SETUP_CODE }}
+        run: |
+          if [ -n "$ADMIN_SETUP_CODE" ]; then
+            printf '%s' "$ADMIN_SETUP_CODE" > agencyeagle-site/public_html/_private/data/setup.code
+          fi
+
+      - name: Upload over FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: agencyeagle-site/public_html/
+          server-dir: ${{ secrets.FTP_DIR || './' }}
+          dangerous-clean-slate: ${{ github.event_name == 'workflow_dispatch' && inputs.wipe }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            _private/data/*.json
+            _private/data/quiz/**
+
+      # Tell Bing (and the other IndexNow engines) the pages changed, instead of waiting for a crawl.
+      # The key is public by design: it is served at /<key>.txt.
+      - name: Ping IndexNow
+        if: github.event_name == 'push'
+        continue-on-error: true
+        run: |
+          KEY=b115cbcc61b8cd132c1ba96bcafa8eb8
+          URLS=$(grep -o '<loc>[^<]*' agencyeagle-site/public_html/sitemap.xml | sed 's/<loc>//' | python3 -c 'import json,sys; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))')
+          curl -sS -o /dev/null -w 'IndexNow: HTTP %{http_code}\n' -X POST https://api.indexnow.org/indexnow \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "{\"host\":\"agencyeagle.com\",\"key\":\"$KEY\",\"keyLocation\":\"https://agencyeagle.com/$KEY.txt\",\"urlList\":$URLS}"

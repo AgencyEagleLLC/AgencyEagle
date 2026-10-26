@@ -1,0 +1,15 @@
+# Agency Eagle
+
+> Agency Eagle builds and hosts fast, secure, plain-HTML websites for small businesses. No WordPress, no plugins. Based in Jefferson City, Tennessee, in business since 2002. Phone (865) 300-5397, sales@agencyeagle.com.
+
+## Plans
+- Hosting and portal, $99/month: hosting, backups, client portal, AI Brain for organic SEO, social ad tools, hashtag and hook post creation, site management and monitoring.
+- Growth, $200/month: everything in Hosting and portal plus funnel management and tracking, Google Analytics, Meta Pixel and Google tag setup, and full AI access to the site through Agency Eagle's platform tools.
+- Done-for-you website build, $5,000 one time. 30-day money-back guarantee on every website setup.
+
+## Pages
+- [Home](https://agencyeagle.com/): the anti-WordPress website company
+- [Services](https://agencyeagle.com/services/): website design, hosting, SEO, lead generation
+- [Pricing](https://agencyeagle.com/pricing/): plans and FAQs
+- [Free AI-Ready Site Score](https://agencyeagle.com/ai-ready/): a free check of whether ChatGPT, Copilot and Google's AI can find a business website
+- [Contact](https://agencyeagle.com/contact/)
