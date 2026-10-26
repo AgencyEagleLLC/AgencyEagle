@@ -1,0 +1,9 @@
+---
+# Used by cPanel > Git Version Control > "Deploy HEAD Commit" on the turnerfirst account.
+# Publishes turnerfirst-letting/public_html/ to letting.turnerfirst.com (the account's public_html).
+# agencyeagle.com (agencyeagle-site/) is deployed separately by GitHub Actions and is NOT touched here.
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/turnerfirst/public_html/
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -R turnerfirst-letting/public_html/. $DEPLOYPATH
