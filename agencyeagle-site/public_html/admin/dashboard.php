@@ -21,6 +21,8 @@ ae_send_security_headers();
 <main class="container">
   <h1>Clients</h1>
   <p>Client list, Site Brief downloads, backups and uploads arrive here in the next build steps.</p>
+  <h2>Marketing</h2>
+  <p><a class="button" href="/admin/leads.php">AI-Ready Site Score leads</a></p>
 </main>
 </body>
 </html>

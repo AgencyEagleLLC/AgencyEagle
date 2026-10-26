@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free AI-Ready Site Score: Can AI Find You? | Agency Eagle</title>
+<meta name="description" content="Can ChatGPT, Copilot and Google's AI find your business? Get a free AI-Ready Site Score: a live check of robots.txt, Bing, sitemap and schema.">
+
+<link rel="canonical" href="https://agencyeagle.com/ai-ready/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Agency Eagle">
+<meta property="og:title" content="Free AI-Ready Site Score: Can AI Find You? | Agency Eagle">
+<meta property="og:description" content="Can ChatGPT, Copilot and Google's AI find your business? Get a free AI-Ready Site Score: a live check of robots.txt, Bing, sitemap and schema.">
+<meta property="og:url" content="https://agencyeagle.com/ai-ready/">
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/site.css">
+<script src="/assets/ai-ready.js" defer></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ProfessionalService",
+  "name": "Agency Eagle",
+  "url": "https://agencyeagle.com/",
+  "telephone": "+18653005397",
+  "email": "sales@agencyeagle.com",
+  "foundingDate": "2002",
+  "description": "Custom website development and hosting from East Tennessee.",
+  "address": {
+    "@type": "PostalAddress",
+    "postOfficeBoxNumber": "99",
+    "addressLocality": "Jefferson City",
+    "addressRegion": "TN",
+    "postalCode": "37760",
+    "addressCountry": "US"
+  },
+  "areaServed": "United States"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is the AI-Ready Site Score free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. It's free, takes about two minutes, and there is nothing to install."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why do you need my email?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Your full report is emailed to you so you can share it with whoever runs your website. We may follow up a few times with tips. Every email has a one-click unsubscribe."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does the check change anything on my website?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It reads your public pages the same way a search engine does. It never logs in or changes anything."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does Bing matter for AI?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ChatGPT search and Microsoft Copilot answer from Bing's index. A site that Bing can't crawl or hasn't indexed is invisible to them, even if it ranks on Google."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is llms.txt?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A short text file at the root of your site that tells AI tools what your business does and which pages matter most. It's new, and few sites have one yet."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="topbar">
+  <div class="container">
+    <span>Websites and hosting from East Tennessee since 2002</span>
+    <span><a href="mailto:help@agencyeagle.com">Support</a> <a href="mailto:accounting@agencyeagle.com">Billing</a></span>
+  </div>
+</div>
+<header class="site-header">
+  <div class="container">
+    <a class="logo" href="/"><img src="/assets/agency-eagle-logo.png" alt="Agency Eagle" width="354" height="40"></a>
+    <nav class="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="/services/">Services</a></li>
+        <li><a href="/pricing/">Pricing</a></li>
+        <li><a href="/ai-ready/" aria-current="page">Free AI Score</a></li>
+        <li><a href="/contact/">Contact</a></li>
+      </ul>
+    </nav>
+    <a class="header-call" href="tel:+18653005397">Call (865) 300-5397</a>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero quiz-hero">
+    <div class="container hero-grid">
+      <div>
+        <p class="eyebrow">Free AI-Ready Site Score</p>
+        <h1>Can ChatGPT, Copilot and Google's AI find your business?</h1>
+        <p class="lede">More customers now ask an AI assistant instead of searching. If those assistants can't read your site, they recommend someone else. Find out where you stand in about two minutes.</p>
+        <ul class="checks">
+          <li>A live check of your site, the way Bing and AI crawlers see it</li>
+          <li>Ten quick questions about the things a robot can't see</li>
+          <li>Your score out of 100 and the five fixes that matter most</li>
+        </ul>
+      </div>
+      <div class="quiz-card" id="quiz" aria-live="polite">
+        <form class="contact-form quiz-gate" id="quiz-gate" novalidate>
+          <h2>Get my free score</h2>
+          <p class="form-note">Your report is emailed to you. No credit card.</p>
+          <p class="form-error" id="err-form" hidden></p>
+          <label for="q-site">Your website</label>
+          <input id="q-site" name="site" inputmode="url" autocomplete="url" placeholder="yourbusiness.com" required>
+          <p class="form-error" id="err-site" hidden></p>
+          <label for="q-name">Your name</label>
+          <input id="q-name" name="name" autocomplete="name" required>
+          <p class="form-error" id="err-name" hidden></p>
+          <label for="q-email">Email</label>
+          <input id="q-email" name="email" type="email" autocomplete="email" required>
+          <p class="form-error" id="err-email" hidden></p>
+          <label for="q-business">Business name (optional)</label>
+          <input id="q-business" name="business" autocomplete="organization">
+          <label for="q-phone">Phone (optional)</label>
+          <input id="q-phone" name="phone" type="tel" autocomplete="tel">
+          <div class="hp" aria-hidden="true"><label for="q-company-url">Leave this empty</label><input id="q-company-url" name="company_url" tabindex="-1" autocomplete="off"></div>
+          <button class="button cta-button big" type="submit">Start my score</button>
+          <noscript><p class="form-error">The score needs JavaScript. Call (865) 300-5397 and we'll run it for you.</p></noscript>
+        </form>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="container">
+      <h2 class="section-title">What we check</h2>
+      <div class="cards">
+        <article class="card">
+          <h3>Can AI crawlers reach you?</h3>
+          <p>HTTPS, robots.txt, and whether Googlebot, Bingbot, ChatGPT, Claude, Perplexity, Gemini and Apple are allowed in.</p>
+        </article>
+        <article class="card">
+          <h3>Can they index you?</h3>
+          <p>No accidental noindex tags, an XML sitemap that robots.txt points to, and one official address per page.</p>
+        </article>
+        <article class="card">
+          <h3>Do they understand who you are?</h3>
+          <p>Page titles, descriptions, headings and schema.org structured data that says what kind of business you are.</p>
+        </article>
+        <article class="card">
+          <h3>Ready for AI answers</h3>
+          <p>An llms.txt guide, mobile setup, speed, link previews and image descriptions.</p>
+        </article>
+        <article class="card">
+          <h3>What a robot can't see</h3>
+          <p>Ten quick questions on Bing Webmaster Tools, Search Console, Google Business Profile, Bing Places, reviews and your content.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+  <section class="band">
+    <div class="container prose">
+      <h2>Why Bing matters more than it used to</h2>
+      <p>ChatGPT search and Microsoft Copilot answer from Bing's index. Many sites that rank fine on Google have never been checked in Bing Webmaster Tools, block newer crawlers by accident, or have no sitemap Bing can find. Those sites don't show up when someone asks an assistant for a recommendation.</p>
+      <p>The fixes are usually small: a few lines in robots.txt, a sitemap, structured data, and pages that answer real questions. Our score shows you which ones you need.</p>
+    </div>
+  </section>
+  <section>
+    <div class="container faq prose">
+      <h2>Questions</h2>
+      <h3>Is the AI-Ready Site Score free?</h3>
+      <p>Yes. It's free, takes about two minutes, and there is nothing to install.</p>
+      <h3>Why do you need my email?</h3>
+      <p>Your full report is emailed to you so you can share it with whoever runs your website. We may follow up a few times with tips. Every email has a one-click unsubscribe.</p>
+      <h3>Does the check change anything on my website?</h3>
+      <p>No. It reads your public pages the same way a search engine does. It never logs in or changes anything.</p>
+      <h3>Why does Bing matter for AI?</h3>
+      <p>ChatGPT search and Microsoft Copilot answer from Bing's index. A site that Bing can't crawl or hasn't indexed is invisible to them, even if it ranks on Google.</p>
+      <h3>What is llms.txt?</h3>
+      <p>A short text file at the root of your site that tells AI tools what your business does and which pages matter most. It's new, and few sites have one yet.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div>
+      <p><img src="/assets/agency-eagle-logo-footer.png" alt="Agency Eagle" width="197" height="20"></p>
+      <p>Custom websites and hosting from East Tennessee, since 2002.</p>
+    </div>
+    <nav aria-label="Footer">
+      <p class="footer-head">Pages</p>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/services/">Services</a></li>
+        <li><a href="/pricing/">Pricing</a></li>
+        <li><a href="/ai-ready/">Free AI-Ready Site Score</a></li>
+        <li><a href="/contact/">Contact</a></li>
+      </ul>
+    </nav>
+    <div>
+      <p class="footer-head">Get in touch</p>
+      <p><a href="tel:+18653005397">(865) 300-5397</a><br>
+      Sales: <a href="mailto:sales@agencyeagle.com">sales@agencyeagle.com</a><br>
+      Service: <a href="mailto:help@agencyeagle.com">help@agencyeagle.com</a><br>
+      P.O. Box 99, Jefferson City, TN 37760</p>
+    </div>
+  </div>
+  <div class="container"><p class="copyright">&copy; 2026 Agency Eagle</p></div>
+</footer>
+</body>
+</html>

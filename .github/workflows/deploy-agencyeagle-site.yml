@@ -59,3 +59,16 @@ jobs:
             **/.git*
             **/.git*/**
             _private/data/*.json
+            _private/data/quiz/**
+
+      # Tell Bing (and the other IndexNow engines) the pages changed, instead of waiting for a crawl.
+      # The key is public by design: it is served at /<key>.txt.
+      - name: Ping IndexNow
+        if: github.event_name == 'push'
+        continue-on-error: true
+        run: |
+          KEY=b115cbcc61b8cd132c1ba96bcafa8eb8
+          URLS=$(grep -o '<loc>[^<]*' agencyeagle-site/public_html/sitemap.xml | sed 's/<loc>//' | python3 -c 'import json,sys; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))')
+          curl -sS -o /dev/null -w 'IndexNow: HTTP %{http_code}\n' -X POST https://api.indexnow.org/indexnow \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "{\"host\":\"agencyeagle.com\",\"key\":\"$KEY\",\"keyLocation\":\"https://agencyeagle.com/$KEY.txt\",\"urlList\":$URLS}"

@@ -9,8 +9,8 @@ public_html/            everything that gets uploaded to the server's public_htm
   contact/send.php      contact form -> sales@agencyeagle.com
   admin/                admin sign-in (password + Google Authenticator code)
   _private/             never served (Require all denied)
-    app/                auth + TOTP code
-    data/               users.json lives here on the server (not in git)
+    app/                auth + TOTP code; quiz.php, site_scan.php, followups.php (AI-Ready Site Score)
+    data/               users.json and quiz/ (leads, funnel counts) live here on the server (not in git)
     tools/              build_pages.py, check_site.py, create-admin.php
 STANDARDS.md            the SEO/HTML rules every site must pass
 ```
@@ -31,3 +31,18 @@ Secrets: `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, optional `FTP_DIR` (`publ
 With `ADMIN_SETUP_CODE` set, open `/admin/setup.php` after deploying, enter that code, your email and a password, and add the shown key to Google Authenticator. The page locks itself once an admin exists. With a terminal you can instead run `php _private/tools/create-admin.php you@agencyeagle.com`.
 
 Admin protections: CSRF tokens, session rotation, strict same-site cookies scoped to /admin, 15-minute lockout after 5 failures, codes can't be reused, 30-minute idle timeout, noindex.
+
+## AI-Ready Site Score (lead funnel)
+`/ai-ready/` is a free quiz: name, email and website first (nothing is shown before that), then 10 questions while the server checks the site live. Score out of 100: 70 from the live check (HTTPS, robots.txt, Googlebot/Bingbot and AI crawler access, noindex, sitemap, canonical, title, description, H1, schema.org JSON-LD, llms.txt, mobile, speed, Open Graph, alt text) and 30 from 8 scored answers (Bing Webmaster Tools, Search Console, Google Business Profile, Bing Places/Apple, reviews, FAQ content, freshness, consistent NAP). The 2 unscored answers (platform, who runs the site) are for sales.
+
+- The visitor sees their report at `/ai-ready/report/?t=<token>` and gets it by email; sales@ gets the lead with every answer.
+- Leads, funnel counts (views, sign-ups, finishes, report views, plan clicks) and a CSV export: `/admin/leads.php`.
+- The scanner only fetches public addresses (private and reserved IPs are refused at every redirect), ports 80/443, 10-second timeout, 3 MB cap. 6 quiz starts per IP per hour.
+- Follow-up emails (reminder 1 day after an unfinished quiz; then 2, 5 and 10 days after the score) ship **off**. Turn them on in `/admin/leads.php`, then add a daily cPanel cron job:
+  `php ~/public_html/_private/tools/send-followups.php` (add `--dry-run` to preview). Every email has a one-click unsubscribe.
+- Wording for the questions, fixes and emails lives in `_private/app/quiz.php` and `_private/app/followups.php`.
+
+Local test: `AE_DEV=1 php -S 127.0.0.1:8080 -t public_html` (emails go to `_private/data/quiz/dev-mail.log`; `AE_SCAN_TEST_IP=127.0.0.1` points every scanned host at a local fixture server).
+
+## Search and AI crawlers on our own site
+`robots.txt` welcomes every crawler except in `/admin/`, `llms.txt` describes the business for AI tools, and each deploy pings IndexNow (Bing and others) with the sitemap URLs. The IndexNow key file is `public_html/b115cbcc61b8cd132c1ba96bcafa8eb8.txt`.

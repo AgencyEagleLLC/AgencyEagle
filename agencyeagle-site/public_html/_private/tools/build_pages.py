@@ -13,9 +13,9 @@ ORG = {
   "areaServed": "United States",
 }
 
-NAV = [("/services/", "Services"), ("/pricing/", "Pricing"), ("/contact/", "Contact")]
+NAV = [("/services/", "Services"), ("/pricing/", "Pricing"), ("/ai-ready/", "Free AI Score"), ("/contact/", "Contact")]
 
-def page(path, title, desc, body, current=None, extra_ld=None, noindex=False):
+def page(path, title, desc, body, current=None, extra_ld=None, noindex=False, script=None):
     url = BASE + path
     nav = "\n".join(
         f'        <li><a href="{h}"{" aria-current=\"page\"" if h == current else ""}>{t}</a></li>' for h, t in NAV)
@@ -37,6 +37,7 @@ def page(path, title, desc, body, current=None, extra_ld=None, noindex=False):
 <meta property="og:url" content="{url}">
 <link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" href="/assets/site.css">
+{f'<script src="{script}" defer></script>' if script else ''}
 {ld}
 </head>
 <body>
@@ -75,6 +76,7 @@ def page(path, title, desc, body, current=None, extra_ld=None, noindex=False):
         <li><a href="/">Home</a></li>
         <li><a href="/services/">Services</a></li>
         <li><a href="/pricing/">Pricing</a></li>
+        <li><a href="/ai-ready/">Free AI-Ready Site Score</a></li>
         <li><a href="/contact/">Contact</a></li>
       </ul>
     </nav>
@@ -128,6 +130,17 @@ f'''  <section class="hero">
         </ul>
         <a class="button cta-button" href="/contact/">Get started</a>
       </aside>
+    </div>
+  </section>
+
+  <section class="score-band">
+    <div class="container score-band-inner">
+      <div>
+        <p class="eyebrow">Free, two minutes</p>
+        <h2>Can ChatGPT, Copilot and Google's AI find your business?</h2>
+        <p>Get your AI-Ready Site Score. We check your site live for the things AI assistants look for, then show you exactly what to fix.</p>
+      </div>
+      <a class="button cta-button big" href="/ai-ready/">Get my free score</a>
     </div>
   </section>
 
@@ -378,6 +391,100 @@ page("/contact/thanks/", "Thanks | Agency Eagle", "Thanks for contacting Agency 
       <p>We'll get back to you within one business day. <a href="/">Back to home</a></p>
     </div>
   </section>''', noindex=True)
+
+AI_FAQ = {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [
+  {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in [
+    ("Is the AI-Ready Site Score free?", "Yes. It's free, takes about two minutes, and there is nothing to install."),
+    ("Why do you need my email?", "Your full report is emailed to you so you can share it with whoever runs your website. We may follow up a few times with tips. Every email has a one-click unsubscribe."),
+    ("Does the check change anything on my website?", "No. It reads your public pages the same way a search engine does. It never logs in or changes anything."),
+    ("Why does Bing matter for AI?", "ChatGPT search and Microsoft Copilot answer from Bing's index. A site that Bing can't crawl or hasn't indexed is invisible to them, even if it ranks on Google."),
+    ("What is llms.txt?", "A short text file at the root of your site that tells AI tools what your business does and which pages matter most. It's new, and few sites have one yet."),
+  ]]}
+AI_CHECKS = [
+  ("Can AI crawlers reach you?", "HTTPS, robots.txt, and whether Googlebot, Bingbot, ChatGPT, Claude, Perplexity, Gemini and Apple are allowed in."),
+  ("Can they index you?", "No accidental noindex tags, an XML sitemap that robots.txt points to, and one official address per page."),
+  ("Do they understand who you are?", "Page titles, descriptions, headings and schema.org structured data that says what kind of business you are."),
+  ("Ready for AI answers", "An llms.txt guide, mobile setup, speed, link previews and image descriptions."),
+  ("What a robot can't see", "Ten quick questions on Bing Webmaster Tools, Search Console, Google Business Profile, Bing Places, reviews and your content."),
+]
+checks_html = "\n".join(f"""        <article class="card">
+          <h3>{t}</h3>
+          <p>{d}</p>
+        </article>""" for t, d in AI_CHECKS)
+page("/ai-ready/", "Free AI-Ready Site Score: Can AI Find You? | Agency Eagle",
+ "Can ChatGPT, Copilot and Google's AI find your business? Get a free AI-Ready Site Score: a live check of robots.txt, Bing, sitemap and schema.",
+f'''  <section class="hero quiz-hero">
+    <div class="container hero-grid">
+      <div>
+        <p class="eyebrow">Free AI-Ready Site Score</p>
+        <h1>Can ChatGPT, Copilot and Google's AI find your business?</h1>
+        <p class="lede">More customers now ask an AI assistant instead of searching. If those assistants can't read your site, they recommend someone else. Find out where you stand in about two minutes.</p>
+        <ul class="checks">
+          <li>A live check of your site, the way Bing and AI crawlers see it</li>
+          <li>Ten quick questions about the things a robot can't see</li>
+          <li>Your score out of 100 and the five fixes that matter most</li>
+        </ul>
+      </div>
+      <div class="quiz-card" id="quiz" aria-live="polite">
+        <form class="contact-form quiz-gate" id="quiz-gate" novalidate>
+          <h2>Get my free score</h2>
+          <p class="form-note">Your report is emailed to you. No credit card.</p>
+          <p class="form-error" id="err-form" hidden></p>
+          <label for="q-site">Your website</label>
+          <input id="q-site" name="site" inputmode="url" autocomplete="url" placeholder="yourbusiness.com" required>
+          <p class="form-error" id="err-site" hidden></p>
+          <label for="q-name">Your name</label>
+          <input id="q-name" name="name" autocomplete="name" required>
+          <p class="form-error" id="err-name" hidden></p>
+          <label for="q-email">Email</label>
+          <input id="q-email" name="email" type="email" autocomplete="email" required>
+          <p class="form-error" id="err-email" hidden></p>
+          <label for="q-business">Business name (optional)</label>
+          <input id="q-business" name="business" autocomplete="organization">
+          <label for="q-phone">Phone (optional)</label>
+          <input id="q-phone" name="phone" type="tel" autocomplete="tel">
+          <div class="hp" aria-hidden="true"><label for="q-company-url">Leave this empty</label><input id="q-company-url" name="company_url" tabindex="-1" autocomplete="off"></div>
+          <button class="button cta-button big" type="submit">Start my score</button>
+          <noscript><p class="form-error">The score needs JavaScript. Call {PHONE} and we'll run it for you.</p></noscript>
+        </form>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="container">
+      <h2 class="section-title">What we check</h2>
+      <div class="cards">
+{checks_html}
+      </div>
+    </div>
+  </section>
+  <section class="band">
+    <div class="container prose">
+      <h2>Why Bing matters more than it used to</h2>
+      <p>ChatGPT search and Microsoft Copilot answer from Bing's index. Many sites that rank fine on Google have never been checked in Bing Webmaster Tools, block newer crawlers by accident, or have no sitemap Bing can find. Those sites don't show up when someone asks an assistant for a recommendation.</p>
+      <p>The fixes are usually small: a few lines in robots.txt, a sitemap, structured data, and pages that answer real questions. Our score shows you which ones you need.</p>
+    </div>
+  </section>
+  <section>
+    <div class="container faq prose">
+      <h2>Questions</h2>
+{chr(10).join(f"      <h3>{x['name']}</h3>{chr(10)}      <p>{x['acceptedAnswer']['text']}</p>" for x in AI_FAQ["mainEntity"])}
+    </div>
+  </section>''', current="/ai-ready/", extra_ld=AI_FAQ, script="/assets/ai-ready.js")
+
+page("/ai-ready/report/", "Your AI-Ready Site Score | Agency Eagle", "Your AI-Ready Site Score report from Agency Eagle.",
+'''  <section class="page-head">
+    <div class="container">
+      <p class="eyebrow">AI-Ready Site Score</p>
+      <h1 id="report-title">Your report</h1>
+      <p id="report-sub">Loading your report&hellip;</p>
+    </div>
+  </section>
+  <section>
+    <div class="container" id="report" aria-live="polite">
+      <noscript><p>Your report needs JavaScript to display. It was also emailed to you.</p></noscript>
+    </div>
+  </section>''', noindex=True, script="/assets/ai-ready.js")
 
 page("/404.html", "Page not found | Agency Eagle", "That page could not be found.",
 '''  <section class="page-head">
