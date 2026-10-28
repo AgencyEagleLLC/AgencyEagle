@@ -25,7 +25,7 @@ python3 _private/tools/check_site.py .
 ## Deploying
 `.github/workflows/deploy-agencyeagle-site.yml` uploads `public_html/` over FTPS on every push to `master` that changes this folder. To clear out the server first (one time, when leaving WordPress), run the workflow by hand with **wipe** checked.
 
-Secrets: `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, optional `FTP_DIR` (`public_html/` when the FTP login opens in the account home), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `ADMIN_EMAILS`.
+Secrets: `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, optional `FTP_DIR` (`public_html/` when the FTP login opens in the account home), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_EMAILS`, `WHM_USER`, `WHM_API_TOKEN` and optional `WHM_HOST`.
 
 ## Admin sign-in
 `/admin` signs in with Google first. The deploy writes `_private/data/oauth.conf` from the secrets, and only the Google accounts in `ADMIN_EMAILS` (comma separated) get in.
@@ -57,3 +57,11 @@ AI-Ready quiz sign-ups become contacts when the CRM is opened (matched by email;
 
 ## Search and AI crawlers on our own site
 `robots.txt` welcomes every crawler except in `/admin/`, `llms.txt` describes the business for AI tools, and each deploy pings IndexNow (Bing and others) with the sitemap URLs. The IndexNow key file is `public_html/b115cbcc61b8cd132c1ba96bcafa8eb8.txt`.
+
+## Hosting accounts (WHM)
+The deploy writes `_private/data/whm.conf` from `WHM_USER` / `WHM_API_TOKEN` (the token belongs to the `lagunait` reseller). From `/admin`:
+
+- `sites.php`: every account, live from WHM (cached 10 minutes), with a **Manage** link.
+- `site.php?user=…`: one-click cPanel login, reset the cPanel password (shown once, never stored), run AutoSSL, change package, suspend/unsuspend, and delete (type the domain to confirm). The reseller's own account can't be suspended or deleted from here.
+- `activate.php`: creates the cPanel account, publishes a "coming soon" page and starts AutoSSL, then shows the DNS records to set.
+- `audit.php`: every change, who made it and whether WHM accepted it (`_private/data/whm-audit.jsonl`; passwords are never logged).

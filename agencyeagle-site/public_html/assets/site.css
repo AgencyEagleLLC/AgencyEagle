@@ -280,3 +280,23 @@ section { padding: 56px 0; }
 .tag-ok { background: #e3f4ea; color: #1d6b3c; }
 .tag-warn { background: #fdf0e3; color: #8a4310; }
 .tag-bad { background: #fbeceb; color: #a1281e; }
+
+/* Admin: managing one site */
+.sites-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.button.small { padding: 6px 14px; font-size: .9rem; }
+.button.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+.button.danger:hover { background: #7d1d15; border-color: #7d1d15; }
+.site-facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 16px 0 24px; }
+.site-facts dt { font-weight: 600; color: var(--heading); }
+.site-facts dd { margin: 0; overflow-wrap: anywhere; }
+.site-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.site-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+.site-card h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.site-card p { margin: 0 0 12px; color: var(--muted); }
+.site-card-danger { border-color: var(--danger); }
+.site-action label { display: block; font-weight: 600; margin: 8px 0 6px; }
+.site-action input, .site-action select, .admin-form select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); font-size: 1rem; margin-bottom: 12px; box-sizing: border-box; }
+.secret { display: inline-block; background: #fff; border: 1px solid var(--line); padding: 6px 10px; border-radius: var(--radius); font-size: 1.05rem; user-select: all; overflow-wrap: anywhere; }
+.steps { list-style: none; padding: 0; margin: 0 0 12px; }
+.steps li { margin: 6px 0; }
+.dns { background: var(--panel); padding: 12px 14px; border-radius: var(--radius); overflow-x: auto; }

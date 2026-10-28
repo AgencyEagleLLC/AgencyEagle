@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../_private/app/auth.php';
 require_once __DIR__ . '/../_private/app/whm.php';
+require_once __DIR__ . '/../_private/app/admin_layout.php';
 
 $email = ae_require_admin();
 ae_send_security_headers();
@@ -40,6 +41,7 @@ foreach ($data['sites'] as $s) {
     }
 }
 $csrf = ae_csrf_token();
+$flash = ae_flash();
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -52,10 +54,16 @@ $csrf = ae_csrf_token();
 <body class="admin">
 <header class="admin-bar">
   <strong>Agency Eagle Admin</strong>
-  <span><?= $h($email) ?> · <a href="/admin/dashboard.php">Dashboard</a> · <a href="/admin/logout.php">Sign out</a></span>
+  <span><?= $h($email) ?> · <a href="/admin/dashboard.php">Dashboard</a> · <a href="/admin/audit.php">Audit log</a> · <a href="/admin/logout.php">Sign out</a></span>
 </header>
 <main class="container">
-  <h1>Client sites</h1>
+  <div class="sites-head">
+    <h1>Client sites</h1>
+    <a class="button" href="/admin/activate.php">+ Activate a new site</a>
+  </div>
+<?php if ($flash): ?>
+  <p class="<?= isset($flash['error']) ? 'alert' : 'notice' ?>" role="status"><?= $h($flash['error'] ?? $flash['ok']) ?></p>
+<?php endif; ?>
 <?php if ($data['error'] === 'not_configured'): ?>
   <p class="alert">WHM isn't connected yet. Add the <code>WHM_USER</code> and <code>WHM_API_TOKEN</code> secrets in GitHub and redeploy.</p>
 <?php elseif ($data['error'] !== null): ?>
@@ -77,7 +85,7 @@ $csrf = ae_csrf_token();
 <?php if ($sites): ?>
   <div class="table-wrap">
   <table class="admin-table">
-    <thead><tr><th>Site</th><th>cPanel user</th><th>Package</th><th>Status</th><th>SSL</th><th>Disk</th><th>Created</th><th>Contact email</th></tr></thead>
+    <thead><tr><th>Site</th><th>cPanel user</th><th>Package</th><th>Status</th><th>SSL</th><th>Disk</th><th>Created</th><th>Contact email</th><th></th></tr></thead>
     <tbody>
     <?php foreach ($sites as $s): [$sslText, $sslTone] = $sslLabel($s['ssl']); ?>
       <tr>
@@ -89,6 +97,7 @@ $csrf = ae_csrf_token();
         <td><?= $h($s['disk_used']) ?><?= $s['disk_limit'] !== '' && $s['disk_limit'] !== 'unlimited' ? ' / ' . $h($s['disk_limit']) : '' ?></td>
         <td><?= $s['created'] ? $h(gmdate('M Y', $s['created'])) : '' ?></td>
         <td><?= $h($s['email']) ?></td>
+        <td><a class="button ghost small" href="/admin/site.php?user=<?= $h(rawurlencode($s['user'])) ?>">Manage</a></td>
       </tr>
     <?php endforeach; ?>
     </tbody>

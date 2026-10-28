@@ -20,8 +20,10 @@ ae_send_security_headers();
 </header>
 <main class="container">
   <h1>Clients</h1>
-  <p><a class="button" href="/admin/sites.php">Client sites (live from WHM)</a></p>
-  <p>Activating new sites, Site Brief downloads, backups and uploads arrive here in the next build steps.</p>
+  <p><a class="button" href="/admin/sites.php">Client sites (live from WHM)</a>
+    <a class="button ghost" href="/admin/activate.php">Activate a new site</a>
+    <a class="button ghost" href="/admin/audit.php">Audit log</a></p>
+  <p>The client's own /admin, Site Brief downloads, backups and uploads arrive here in the next build steps.</p>
   <h2>Sales</h2>
   <p><a class="button" href="/admin/crm/">CRM: pipeline, contacts and tasks</a>
     <a class="button ghost" href="/admin/leads.php">AI-Ready Site Score leads</a></p>
