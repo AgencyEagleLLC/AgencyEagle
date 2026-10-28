@@ -53,6 +53,10 @@ $active = $suspended = 0;
 foreach ($data['sites'] as $s) {
     $s['suspended'] ? $suspended++ : $active++;
     [$label, $tone, $days] = $sslInfo($s['ssl']);
+    $br = ae_brain_get($s['domain']);
+    if ($br && !$br['reached'] && !$s['suspended']) {
+        $issues[$s['user']][] = 'the site didn\'t load for the SEO brain (' . $br['error'] . ')';
+    }
     if ($s['suspended']) {
         $issues[$s['user']][] = 'suspended' . ($s['suspend_reason'] !== '' ? ' (' . $s['suspend_reason'] . ')' : '');
     } elseif ($tone === 'bad') {
@@ -84,7 +88,7 @@ $brains = [];
 foreach ($data['sites'] as $s) {
     $brains[$s['domain']] = ae_brain_get($s['domain']);
 }
-$scored = array_filter($brains);
+$scored = array_filter($brains, fn($b) => $b && $b['reached']);
 $avgScore = $scored ? (int)round(array_sum(array_column($scored, 'score')) / count($scored)) : null;
 $recent = array_slice(ae_whm_audit_entries(6), 0, 6);
 $csrf = ae_csrf_token();
@@ -149,7 +153,7 @@ ae_admin_head('Client sites', $email, 'sites');
           <td><?php if ($s['suspended']): ?><span class="pill pill-bad" title="<?= $h($s['suspend_reason']) ?>">Suspended</span><?php elseif (isset($issues[$s['user']])): ?><span class="pill pill-warn">Needs attention</span><?php else: ?><span class="pill pill-ok">Live</span><?php endif; ?></td>
           <td class="nowrap"><span class="pill pill-<?= $sslTone ?>"><?= $h($sslText) ?></span></td>
           <?php $b = $brains[$s['domain']]; $bk = ae_backup_cached($s['user']); ?>
-          <td class="nowrap"><?php if ($b): ?><span class="pill pill-<?= ae_brain_tone($b) ?>"><?= (int)$b['score'] ?>/100</span><?php else: ?><span class="muted">Not scored</span><?php endif; ?></td>
+          <td class="nowrap"><?php if ($b && !$b['reached']): ?><span class="pill pill-bad" title="<?= $h($b['error']) ?>">Can't reach</span><?php elseif ($b): ?><span class="pill pill-<?= ae_brain_tone($b) ?>"><?= (int)$b['score'] ?>/100</span><?php else: ?><span class="muted">Not scored</span><?php endif; ?></td>
           <td class="nowrap"><?php if ($bk && $bk['files']): ?><?= $h(gmdate('M j, Y', $bk['files'][0]['at'])) ?><?php elseif ($bk): ?><span class="muted">None</span><?php else: ?><span class="muted">Not checked</span><?php endif; ?></td>
           <td class="nowrap"><?= $h($s['disk_used']) ?></td>
           <td class="nowrap"><a href="https://<?= $h($s['domain']) ?>/" target="_blank" rel="noopener">Open</a> · <a href="<?= $h($manage) ?>">Manage</a></td>

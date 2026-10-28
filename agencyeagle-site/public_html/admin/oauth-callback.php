@@ -6,5 +6,12 @@ ae_session_start();
 ae_send_security_headers();
 
 $conf = ae_oauth_conf();
+$home = ($_SESSION['oauth_purpose'] ?? 'admin') === 'portal' ? '/portal/' : '/admin/';
 $result = $conf === null ? 'google' : ae_google_callback($conf, $_GET);
-header('Location: ' . ($result === 'ok' ? '/admin/dashboard.php' : '/admin/?error=' . urlencode($result)));
+if ($result === 'portal') {
+    header('Location: /portal/');
+} elseif ($result === 'ok') {
+    header('Location: /admin/dashboard.php');
+} else {
+    header('Location: ' . $home . '?error=' . urlencode($result));
+}

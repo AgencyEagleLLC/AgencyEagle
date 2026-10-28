@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../_private/app/auth.php';
 require_once __DIR__ . '/../_private/app/whm.php';
 require_once __DIR__ . '/../_private/app/admin_layout.php';
+require_once __DIR__ . '/../_private/app/clients.php';
 
 $email = ae_require_admin();
 ae_send_security_headers();
@@ -52,6 +53,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } catch (RuntimeException $e) {
                     $steps[] = ['warn', 'Splash page not published: ' . $e->getMessage()];
                 }
+                ae_client_set_emails($in['domain'], [$in['contact']]);
+                try {
+                    ae_whm_save_file($email, $user, 'public_html/admin', 'index.php', ae_client_admin_stub($in['domain']));
+                    $steps[] = ['ok', 'Installed ' . $in['domain'] . '/admin: ' . $in['contact'] . ' signs in there with Google to reach their portal.'];
+                } catch (RuntimeException $e) {
+                    $steps[] = ['warn', 'Client /admin link not installed: ' . $e->getMessage()];
+                }
                 try {
                     ae_whm_act($email, 'autossl', $user, 'start_autossl_check_for_one_user', ['username' => $user]);
                     $steps[] = ['ok', 'Started AutoSSL. The certificate is issued once the domain points here.'];
@@ -75,20 +83,20 @@ foreach ($steps as [$tone, $text]) {
 $plan = [
     ['Create the cPanel account', 'WHM API: a new account on the chosen package, with a random password shown to you once.'],
     ['Publish the splash page', 'One clean page with the business name, email and phone: "new website on the way".'],
+    ['Install the client /admin', 'Their /admin opens the Agency Eagle portal: Google sign-in for their email, SEO brain, backups and Site Brief.'],
     ['Start SSL', 'Runs AutoSSL now. The certificate is issued as soon as the domain points here.'],
     ['Point the domain', 'Set the A record to ' . AE_SERVER_IP . ' and www as a CNAME at the client\'s DNS host.'],
-    ['Install the client /admin', 'Google sign-in for their email, backups, Site Brief and SEO brain.'],
     ['Go live and welcome the client', 'First backup, first SEO score, submit to Google and Bing, email the client their /admin link.'],
 ];
 $state = static function (int $i) use ($did, $steps): array {
-    // Steps 0-2 run here; 3 waits on the client's DNS; 4-5 are the next build.
-    if ($i <= 2 && isset($did[$i])) {
+    // Steps 0-3 run here; 4 waits on the client's DNS; 5 is the next build.
+    if ($i <= 3 && isset($did[$i])) {
         return $did[$i] === 'ok' ? ['done', '✓'] : ['warn', '!'];
     }
-    if ($i === 3 && $steps) {
+    if ($i === 4 && $steps) {
         return ['next', (string)($i + 1)];
     }
-    return [$i >= 4 ? 'soon' : 'todo', (string)($i + 1)];
+    return [$i >= 5 ? 'soon' : 'todo', (string)($i + 1)];
 };
 ae_admin_head('Activate a new site', $email, 'sites');
 ?>
