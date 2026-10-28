@@ -95,10 +95,15 @@ $form = static function (string $action, string $label, string $class = 'button'
         . $extra
         . '<button type="submit" class="' . $h($class) . '">' . $h($label) . '</button></form>';
 };
-ae_admin_head($site['domain'], $email);
+ae_admin_head($site['domain'], $email, 'sites');
 ?>
-  <p><a href="/admin/sites.php">← All sites</a></p>
-  <h1><?= $h($site['domain']) ?></h1>
+  <p><a href="/admin/sites.php">← Back to sites</a></p>
+  <div class="console-head">
+    <div>
+      <h1><?= $h($site['domain']) ?></h1>
+      <p><a href="https://<?= $h($site['domain']) ?>/" target="_blank" rel="noopener">Open the site</a></p>
+    </div>
+  </div>
 <?php if ($flash && isset($flash['error'])): ?>
   <p class="alert" role="alert"><?= $h($flash['error']) ?></p>
 <?php elseif ($flash): ?>
@@ -108,8 +113,8 @@ ae_admin_head($site['domain'], $email);
     <?php if (!empty($flash['secret'])): ?><p><code class="secret"><?= $h($flash['secret']) ?></code></p><?php endif; ?>
   </div>
 <?php endif; ?>
-  <dl class="site-facts">
-    <dt>Status</dt><dd><?= $site['suspended'] ? '<span class="tag tag-bad">Suspended</span> ' . $h($site['suspend_reason']) : '<span class="tag tag-ok">Active</span>' ?></dd>
+  <dl class="site-facts console-card console-pad">
+    <dt>Status</dt><dd><?= $site['suspended'] ? '<span class="pill pill-bad">Suspended</span> ' . $h($site['suspend_reason']) : '<span class="pill pill-ok">Live</span>' ?></dd>
     <dt>cPanel user</dt><dd><?= $h($site['user']) ?></dd>
     <dt>Package</dt><dd><?= $h($site['plan']) ?></dd>
     <dt>Contact email</dt><dd><?= $h($site['email']) ?></dd>

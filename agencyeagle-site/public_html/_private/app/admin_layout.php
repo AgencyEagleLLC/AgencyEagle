@@ -1,10 +1,17 @@
 <?php
-// Shared header for the admin pages that manage hosting accounts.
+// Shared header and nav for the hosting admin pages (Sites, Site, Activate, Audit log).
 declare(strict_types=1);
 
-function ae_admin_head(string $title, string $email): void
+function ae_admin_head(string $title, string $email, string $active = 'sites'): void
 {
     $h = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES);
+    $nav = [
+        'sites' => ['/admin/sites.php', 'Sites'],
+        'crm' => ['/admin/crm/', 'CRM'],
+        'leads' => ['/admin/leads.php', 'Leads'],
+        'audit' => ['/admin/audit.php', 'Audit log'],
+        'security' => ['/admin/security.php', 'Security'],
+    ];
     echo '<!doctype html>
 <html lang="en">
 <head>
@@ -14,12 +21,17 @@ function ae_admin_head(string $title, string $email): void
 <title>' . $h($title) . ' | Agency Eagle Admin</title>
 <link rel="stylesheet" href="/assets/site.css">
 </head>
-<body class="admin">
-<header class="admin-bar">
-  <strong>Agency Eagle Admin</strong>
-  <span>' . $h($email) . ' · <a href="/admin/dashboard.php">Dashboard</a> · <a href="/admin/sites.php">Sites</a> · <a href="/admin/audit.php">Audit log</a> · <a href="/admin/logout.php">Sign out</a></span>
+<body class="admin console">
+<header class="console-bar">
+  <a class="console-brand" href="/admin/sites.php"><strong>Agency Eagle</strong> <span class="console-pill">Admin</span></a>
+  <nav class="console-nav" aria-label="Main">';
+    foreach ($nav as $key => [$href, $label]) {
+        echo '<a href="' . $h($href) . '"' . ($key === $active ? ' aria-current="page"' : '') . '>' . $h($label) . '</a>';
+    }
+    echo '</nav>
+  <span class="console-user">' . $h($email) . ' · <a href="/admin/logout.php">Sign out</a></span>
 </header>
-<main class="container">
+<main class="console-main">
 ';
 }
 

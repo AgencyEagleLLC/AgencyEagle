@@ -67,51 +67,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $csrf = ae_csrf_token();
-ae_admin_head('Activate a new site', $email);
+// The six steps from the mockup, with what happened on this run.
+$did = [];
+foreach ($steps as [$tone, $text]) {
+    $did[] = $tone;
+}
+$plan = [
+    ['Create the cPanel account', 'WHM API: a new account on the chosen package, with a random password shown to you once.'],
+    ['Publish the splash page', 'One clean page with the business name, email and phone: "new website on the way".'],
+    ['Start SSL', 'Runs AutoSSL now. The certificate is issued as soon as the domain points here.'],
+    ['Point the domain', 'Set the A record to ' . AE_SERVER_IP . ' and www as a CNAME at the client\'s DNS host.'],
+    ['Install the client /admin', 'Google sign-in for their email, backups, Site Brief and SEO brain.'],
+    ['Go live and welcome the client', 'First backup, first SEO score, submit to Google and Bing, email the client their /admin link.'],
+];
+$state = static function (int $i) use ($did, $steps): array {
+    // Steps 0-2 run here; 3 waits on the client's DNS; 4-5 are the next build.
+    if ($i <= 2 && isset($did[$i])) {
+        return $did[$i] === 'ok' ? ['done', '✓'] : ['warn', '!'];
+    }
+    if ($i === 3 && $steps) {
+        return ['next', (string)($i + 1)];
+    }
+    return [$i >= 4 ? 'soon' : 'todo', (string)($i + 1)];
+};
+ae_admin_head('Activate a new site', $email, 'sites');
 ?>
-  <p><a href="/admin/sites.php">← All sites</a></p>
-  <h1>Activate a new site</h1>
-<?php if ($steps): ?>
-  <div class="notice" role="status">
-    <ul class="steps">
-    <?php foreach ($steps as [$tone, $text]): ?>
-      <li><span class="tag tag-<?= $tone ?>"><?= $tone === 'ok' ? 'Done' : 'Check' ?></span> <?= $h($text) ?></li>
-    <?php endforeach; ?>
-    </ul>
-    <p><strong>cPanel password</strong> (copy it now; it isn't shown again or stored): <code class="secret"><?= $h($pw) ?></code></p>
+  <p><a href="/admin/sites.php">← Back to sites</a></p>
+  <div class="console-head">
+    <div>
+      <h1>Activate a new site</h1>
+      <p>Fill in a few fields. The panel builds the hosting account, a splash page and SSL, then tells you the DNS records to set.</p>
+    </div>
   </div>
-  <h2>Point the domain</h2>
-  <p>Set these at the domain's DNS host (GoDaddy, Cloudflare and so on), then run AutoSSL from the site page:</p>
-  <pre class="dns">A      @     <?= $h(AE_SERVER_IP) ?>
-
-CNAME  www   <?= $h($in['domain']) ?></pre>
-  <p><a class="button" href="/admin/site.php?user=<?= $h(rawurlencode($user)) ?>">Manage <?= $h($in['domain']) ?></a></p>
+  <div class="activate-grid">
+<?php if ($steps): ?>
+    <section class="console-card console-pad">
+      <h2>1. <?= $h($in['domain']) ?> is set up</h2>
+      <ul class="steps">
+      <?php foreach ($steps as [$tone, $text]): ?>
+        <li><span class="pill pill-<?= $tone === 'ok' ? 'ok' : 'warn' ?>"><?= $tone === 'ok' ? 'Done' : 'Check' ?></span> <?= $h($text) ?></li>
+      <?php endforeach; ?>
+      </ul>
+      <p><strong>cPanel password</strong> (copy it now; it isn't shown again or stored):</p>
+      <p><code class="secret"><?= $h($pw) ?></code></p>
+      <p><a class="button" href="/admin/site.php?user=<?= $h(rawurlencode($user)) ?>">Manage <?= $h($in['domain']) ?></a> <a class="button ghost" href="/admin/activate.php">Activate another</a></p>
+    </section>
 <?php else: ?>
-  <p>Creates the hosting account, publishes a "coming soon" page and starts SSL. The client's /admin, Site Brief and backups come in the next build.</p>
+    <form method="post" class="console-card console-pad console-form">
+      <h2>1. Client and site</h2>
 <?php if ($error): ?>
-  <p class="alert" role="alert"><?= $h($error) ?></p>
+      <p class="alert" role="alert"><?= $h($error) ?></p>
 <?php endif; ?>
-  <form method="post" class="admin-form">
-    <input type="hidden" name="csrf" value="<?= $h($csrf) ?>">
-    <label for="domain">Domain</label>
-    <input id="domain" name="domain" required placeholder="newclient.com" value="<?= $h($in['domain']) ?>">
-    <label for="business">Business name</label>
-    <input id="business" name="business" required value="<?= $h($in['business']) ?>">
-    <label for="contact">Client's email</label>
-    <input id="contact" name="contact" type="email" required value="<?= $h($in['contact']) ?>">
-    <label for="phone">Phone for the splash page (optional)</label>
-    <input id="phone" name="phone" type="tel" value="<?= $h($in['phone']) ?>">
+      <input type="hidden" name="csrf" value="<?= $h($csrf) ?>">
+      <label for="domain">Domain</label>
+      <input id="domain" name="domain" required placeholder="newclient.com" value="<?= $h($in['domain']) ?>">
+      <label for="business">Business name</label>
+      <input id="business" name="business" required value="<?= $h($in['business']) ?>">
+      <label for="contact">Client's email</label>
+      <input id="contact" name="contact" type="email" required value="<?= $h($in['contact']) ?>">
+      <p class="hint">Used as the cPanel contact and shown on the splash page. It'll also be their Google sign-in for the client /admin.</p>
+      <label for="phone">Phone for the splash page (optional)</label>
+      <input id="phone" name="phone" type="tel" value="<?= $h($in['phone']) ?>">
 <?php if ($packages): ?>
-    <label for="pkg">Package</label>
-    <select id="pkg" name="pkg">
-    <?php foreach ($packages as $p): ?>
-      <option<?= $p === $in['pkg'] ? ' selected' : '' ?>><?= $h($p) ?></option>
-    <?php endforeach; ?>
-    </select>
+      <label for="pkg">Package</label>
+      <select id="pkg" name="pkg">
+      <?php foreach ($packages as $p): ?>
+        <option<?= $p === $in['pkg'] ? ' selected' : '' ?>><?= $h($p) ?></option>
+      <?php endforeach; ?>
+      </select>
 <?php endif; ?>
-    <label for="username">cPanel username (optional)</label>
-    <input id="username" name="username" maxlength="16" pattern="[a-z][a-z0-9]{0,15}" placeholder="made from the domain if blank" value="<?= $h($in['username']) ?>">
-    <button type="submit">Activate site</button>
-  </form>
+      <details class="more"<?= $in['username'] !== '' ? ' open' : '' ?>>
+        <summary>cPanel username</summary>
+        <label for="username">Username (optional)</label>
+        <input id="username" name="username" maxlength="16" pattern="[a-z][a-z0-9]{0,15}" placeholder="made from the domain if blank" value="<?= $h($in['username']) ?>">
+      </details>
+      <button type="submit" class="button big block">Activate site</button>
+    </form>
 <?php endif; ?>
+    <section class="console-card console-pad" aria-label="Setup progress">
+      <h2>2. What the panel does</h2>
+      <ol class="flow">
+      <?php foreach ($plan as $i => [$title, $text]): [$st, $mark] = $state($i); ?>
+        <li class="flow-<?= $st ?>">
+          <span class="flow-dot"><?= $h($mark) ?></span>
+          <span><strong><?= $h($title) ?></strong><?= $st === 'soon' ? ' <span class="pill pill-soon">Coming soon</span>' : ($st === 'next' ? ' <span class="pill pill-info">Waiting on DNS</span>' : '') ?><br><span class="muted"><?= $h($text) ?></span></span>
+        </li>
+      <?php endforeach; ?>
+      </ol>
+      <div class="dns-box">
+        <strong>DNS records<?= $steps ? ' for ' . $h($in['domain']) : '' ?></strong>
+        <pre>A      @     <?= $h(AE_SERVER_IP) ?>
+
+CNAME  www   <?= $h($steps ? $in['domain'] : 'newclient.com') ?></pre>
+      </div>
+    </section>
+  </div>
 <?php ae_admin_foot();
