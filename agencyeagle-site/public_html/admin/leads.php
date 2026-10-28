@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../_private/app/auth.php';
 require_once __DIR__ . '/../_private/app/followups.php';
+require_once __DIR__ . '/../_private/app/admin_layout.php';
 
 $email = ae_require_admin();
 $h = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES);
@@ -61,21 +62,8 @@ $f = ae_funnel_totals(30);
 $pct = static fn(int $a, int $b): string => $b > 0 ? round(100 * $a / $b) . '%' : '-';
 $on = ae_followups_on();
 $csrf = ae_csrf_token();
-?><!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
-<title>AI-Ready Leads | Agency Eagle Admin</title>
-<link rel="stylesheet" href="<?= ae_css_href() ?>">
-</head>
-<body class="admin">
-<header class="admin-bar">
-  <strong><a href="/admin/dashboard.php">Agency Eagle Admin</a></strong>
-  <span><?= $h($email) ?> · <a href="/admin/logout.php">Sign out</a></span>
-</header>
-<main class="container">
+ae_admin_head('AI-Ready Leads', $email, 'leads');
+?>
   <h1>AI-Ready Site Score leads</h1>
 
   <h2>Funnel, last 30 days</h2>
@@ -118,6 +106,4 @@ $csrf = ae_csrf_token();
     </tbody>
   </table>
   </div>
-</main>
-</body>
-</html>
+<?php ae_admin_foot();

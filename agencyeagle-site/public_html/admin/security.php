@@ -2,6 +2,7 @@
 // Set up (or reset) the backup login, password + authenticator, for the signed-in admin.
 declare(strict_types=1);
 require_once __DIR__ . '/../_private/app/auth.php';
+require_once __DIR__ . '/../_private/app/admin_layout.php';
 
 $email = ae_require_admin();
 ae_send_security_headers();
@@ -38,21 +39,8 @@ if ($can_enroll && !$saved && empty($_SESSION['enroll_secret'])) {
 }
 $has_backup = isset(ae_users()[$email]);
 $csrf = ae_csrf_token();
-?><!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
-<title>Backup login | Agency Eagle Admin</title>
-<link rel="stylesheet" href="<?= ae_css_href() ?>">
-</head>
-<body class="admin">
-<header class="admin-bar">
-  <strong>Agency Eagle Admin</strong>
-  <span><?= htmlspecialchars($email) ?> · <a href="/admin/dashboard.php">Dashboard</a> · <a href="/admin/logout.php">Sign out</a></span>
-</header>
-<main class="container">
+ae_admin_head('Backup login', $email, 'security');
+?>
   <h1>Backup login</h1>
 <?php if (!$can_enroll): ?>
   <p>Sign in with Google to set up the backup login.</p>
@@ -76,6 +64,4 @@ $csrf = ae_csrf_token();
     <button type="submit">Save backup login</button>
   </form>
 <?php endif; ?>
-</main>
-</body>
-</html>
+<?php ae_admin_foot();

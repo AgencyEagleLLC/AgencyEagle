@@ -302,7 +302,7 @@ section { padding: 56px 0; }
 .dns { background: var(--panel); padding: 12px 14px; border-radius: var(--radius); overflow-x: auto; }
 
 /* Admin console (matches the admin mockup) */
-body.console { background: #f4f7fa; }
+body.console { background: #f4f7fa; min-height: 100vh; }
 .console-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 24px; background: var(--brand); color: #fff; }
 .console-bar a { color: #fff; }
 .console-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-size: 1.1rem; }
@@ -368,6 +368,8 @@ body.console { background: #f4f7fa; }
   .console-bar, .console-main { padding-left: 16px; padding-right: 16px; }
 }
 .console-main section { padding: 0; }
+.console-main .crm-nav { padding: 0; margin: -8px 0 20px; background: none; }
+.console-main .crm { max-width: none; }
 .console-main section.console-pad { padding: 20px 22px; }
 .console-tools form { margin: 0; }
 .console-main section.site-card { padding: 18px; border-radius: 10px; border-color: #dde5ec; }
