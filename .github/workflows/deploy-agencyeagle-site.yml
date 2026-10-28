@@ -8,14 +8,14 @@ name: Deploy agencyeagle.com
 #
 # Repository secrets (Settings > Secrets and variables > Actions):
 #   FTP_SERVER        e.g. host.agencyeagle.com
-#   FTP_USERNAME      FTP account whose home is public_html
-#   FTP_PASSWORD
-#   FTP_DIR           optional; "public_html/" if the FTP login opens in the account home
+#   No FTP password is stored: each run uses the WHM token to give the FTP account
+#   deploy@agencyeagle.com (home: lagunait's public_html) a fresh random password,
+#   creating the account the first time.
 #   GOOGLE_CLIENT_ID      OAuth client (Web application) from Google Cloud Console
 #   GOOGLE_CLIENT_SECRET  its secret
 #   ADMIN_EMAILS          Google account(s) allowed into /admin, comma separated
 #   WHM_USER              WHM login that owns the API token (root or a reseller)
-#   WHM_API_TOKEN         WHM API token, ideally limited to list-accts and ssl-info
+#   WHM_API_TOKEN         WHM API token for that login (also used to set the deploy FTP password)
 #   WHM_HOST              optional; defaults to host.agencyeagle.com
 
 on:
@@ -78,15 +78,53 @@ jobs:
               print("WHM secrets not set; /admin/sites.php will show setup instructions.")
           PY
 
+      - name: Set a fresh password on the deploy FTP login
+        id: ftp
+        env:
+          WHM_HOST: ${{ secrets.WHM_HOST }}
+          WHM_USER: ${{ secrets.WHM_USER }}
+          WHM_API_TOKEN: ${{ secrets.WHM_API_TOKEN }}
+          CPANEL_USER: lagunait
+          FTP_LOGIN: deploy
+          FTP_DOMAIN: agencyeagle.com
+        run: |
+          python3 - <<'PY'
+          import json, os, secrets, string, urllib.parse, urllib.request
+          pw = "Ae7!" + "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(28))
+          print(f"::add-mask::{pw}")
+          host = os.environ["WHM_HOST"] or "host.agencyeagle.com"
+          def uapi(func, **args):
+              body = urllib.parse.urlencode({"cpanel_jsonapi_user": os.environ["CPANEL_USER"], "cpanel_jsonapi_apiversion": 3,
+                                             "cpanel_jsonapi_module": "Ftp", "cpanel_jsonapi_func": func, **args}).encode()
+              req = urllib.request.Request(f"https://{host}:2087/json-api/cpanel?api.version=1", data=body,
+                                           headers={"Authorization": f"whm {os.environ['WHM_USER']}:{os.environ['WHM_API_TOKEN']}"})
+              res = json.load(urllib.request.urlopen(req, timeout=60))
+              meta = res.get("metadata", {})
+              inner = (res.get("data") or {}).get("uapi") or res.get("result") or {}
+              ok = meta.get("result") == 1 and inner.get("status", 1) == 1
+              why = inner.get("errors") or meta.get("reason")
+              return ok, why
+          login, domain = os.environ["FTP_LOGIN"], os.environ["FTP_DOMAIN"]
+          ok, why = uapi("passwd", user=login, domain=domain, **{"pass": pw})
+          if not ok:
+              print(f"Changing the password didn't work ({why}); creating the FTP login instead.")
+              ok, why = uapi("add_ftp", user=login, domain=domain, homedir="public_html", quota=0, **{"pass": pw})
+          if not ok:
+              raise SystemExit(f"Couldn't prepare the deploy FTP login: {why}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"username={login}@{domain}\npassword={pw}\n")
+          print(f"FTP login {login}@{domain} is ready.")
+          PY
+
       - name: Upload over FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
+          username: ${{ steps.ftp.outputs.username }}
+          password: ${{ steps.ftp.outputs.password }}
           protocol: ftps
           local-dir: agencyeagle-site/public_html/
-          server-dir: ${{ secrets.FTP_DIR || './' }}
+          server-dir: ./
           dangerous-clean-slate: ${{ github.event_name == 'workflow_dispatch' && inputs.wipe }}
           exclude: |
             **/.git*

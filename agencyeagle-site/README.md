@@ -25,7 +25,7 @@ python3 _private/tools/check_site.py .
 ## Deploying
 `.github/workflows/deploy-agencyeagle-site.yml` uploads `public_html/` over FTPS on every push to `master` that changes this folder. To clear out the server first (one time, when leaving WordPress), run the workflow by hand with **wipe** checked.
 
-Secrets: `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, optional `FTP_DIR` (`public_html/` when the FTP login opens in the account home), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_EMAILS`, `WHM_USER`, `WHM_API_TOKEN` and optional `WHM_HOST`.
+Secrets: `FTP_SERVER`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_EMAILS`, `WHM_USER`, `WHM_API_TOKEN` and optional `WHM_HOST`.
 
 ## Admin sign-in
 `/admin` signs in with Google first. The deploy writes `_private/data/oauth.conf` from the secrets, and only the Google accounts in `ADMIN_EMAILS` (comma separated) get in.
