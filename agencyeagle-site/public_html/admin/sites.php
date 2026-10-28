@@ -15,50 +15,66 @@ if ($refresh) {
     header('Location: /admin/sites.php');
     exit;
 }
-$sites = $data['sites'];
-$q = strtolower(trim((string)($_GET['q'] ?? '')));
-if ($q !== '') {
-    $sites = array_values(array_filter($sites, fn($s) => str_contains($s['domain'] . ' ' . $s['user'] . ' ' . $s['email'], $q)));
-}
 
-$sslLabel = static function (?array $ssl): array {
+/** [label, tone, days left or null] for a site's certificate. */
+$sslInfo = static function (?array $ssl): array {
     if ($ssl === null || $ssl['expires'] === 0) {
-        return ['None found', 'warn'];
+        return ['None found', 'warn', null];
     }
     if ($ssl['self_signed']) {
-        return ['Self-signed', 'warn'];
+        return ['Self-signed', 'warn', null];
     }
     $days = (int)floor(($ssl['expires'] - time()) / 86400);
     if ($days < 0) {
-        return ['Expired', 'bad'];
+        return ['Expired', 'bad', $days];
     }
-    return ['Valid · ' . gmdate('M j, Y', $ssl['expires']), $days < 14 ? 'warn' : 'ok'];
+    return ['Valid · ' . gmdate('M j, Y', $ssl['expires']), $days < 14 ? 'warn' : 'ok', $days];
 };
-$attention = 0;
+
+// What needs a look, in plain words.
+$issues = [];
+$active = $suspended = 0;
 foreach ($data['sites'] as $s) {
-    if ($s['suspended'] || $sslLabel($s['ssl'])[1] !== 'ok') {
-        $attention++;
+    $s['suspended'] ? $suspended++ : $active++;
+    [$label, $tone, $days] = $sslInfo($s['ssl']);
+    if ($s['suspended']) {
+        $issues[$s['user']][] = 'suspended' . ($s['suspend_reason'] !== '' ? ' (' . $s['suspend_reason'] . ')' : '');
+    } elseif ($tone === 'bad') {
+        $issues[$s['user']][] = 'SSL certificate expired';
+    } elseif ($tone === 'warn' && $days !== null) {
+        $issues[$s['user']][] = 'SSL renews in ' . $days . ' day' . ($days === 1 ? '' : 's');
+    } elseif ($tone === 'warn') {
+        $issues[$s['user']][] = 'no valid SSL certificate (' . strtolower($label) . ')';
     }
 }
+
+$filter = (string)($_GET['f'] ?? 'all');
+$q = strtolower(trim((string)($_GET['q'] ?? '')));
+$sites = array_values(array_filter($data['sites'], function ($s) use ($filter, $q, $issues) {
+    if ($filter === 'attention' && !isset($issues[$s['user']])) {
+        return false;
+    }
+    if ($filter === 'suspended' && !$s['suspended']) {
+        return false;
+    }
+    return $q === '' || str_contains($s['domain'] . ' ' . $s['user'] . ' ' . $s['email'], $q);
+}));
+$chip = static function (string $key, string $label) use ($filter, $q, $h): string {
+    $href = '/admin/sites.php?f=' . $key . ($q !== '' ? '&q=' . rawurlencode($q) : '');
+    return '<a class="chip" href="' . $h($href) . '"' . ($filter === $key ? ' aria-current="true"' : '') . '>' . $h($label) . '</a>';
+};
+$byUser = array_column($data['sites'], null, 'user');
+$recent = array_slice(ae_whm_audit_entries(6), 0, 6);
 $csrf = ae_csrf_token();
 $flash = ae_flash();
-?><!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
-<title>Sites | Agency Eagle Admin</title>
-<link rel="stylesheet" href="/assets/site.css">
-</head>
-<body class="admin">
-<header class="admin-bar">
-  <strong>Agency Eagle Admin</strong>
-  <span><?= $h($email) ?> · <a href="/admin/dashboard.php">Dashboard</a> · <a href="/admin/audit.php">Audit log</a> · <a href="/admin/logout.php">Sign out</a></span>
-</header>
-<main class="container">
-  <div class="sites-head">
-    <h1>Client sites</h1>
+
+ae_admin_head('Client sites', $email, 'sites');
+?>
+  <div class="console-head">
+    <div>
+      <h1>Client sites</h1>
+      <p>Every site on the server, its health, and one-click actions.</p>
+    </div>
     <a class="button" href="/admin/activate.php">+ Activate a new site</a>
   </div>
 <?php if ($flash): ?>
@@ -68,44 +84,83 @@ $flash = ae_flash();
   <p class="alert">WHM isn't connected yet. Add the <code>WHM_USER</code> and <code>WHM_API_TOKEN</code> secrets in GitHub and redeploy.</p>
 <?php elseif ($data['error'] !== null): ?>
   <p class="alert" role="alert">Couldn't read WHM: <?= $h($data['error']) ?></p>
-<?php else: ?>
-  <p><?= count($data['sites']) ?> accounts on the server · <?= $attention ?> need attention · read from WHM <?= $h(gmdate('M j, H:i', (int)$data['fetched'])) ?> UTC</p>
 <?php endif; ?>
-  <div class="sites-tools">
-    <form method="get" class="sites-search">
-      <label for="q">Search sites</label>
-      <input id="q" name="q" type="search" value="<?= $h($q) ?>" placeholder="Domain, cPanel user or email">
-      <button type="submit" class="button ghost">Search</button>
-    </form>
-    <form method="post">
-      <input type="hidden" name="csrf" value="<?= $h($csrf) ?>">
-      <button type="submit" class="button ghost">Refresh from WHM</button>
-    </form>
-  </div>
+
+  <section class="stat-row" aria-label="Totals">
+    <div class="stat"><span class="stat-label">Active sites</span><span class="stat-value"><?= $active ?></span></div>
+    <div class="stat"><span class="stat-label">Suspended</span><span class="stat-value"><?= $suspended ?></span></div>
+    <div class="stat"><span class="stat-label">Need attention</span><span class="stat-value<?= $issues ? ' stat-warn' : '' ?>"><?= count($issues) ?></span></div>
+    <div class="stat"><span class="stat-label">Last off-server backup</span><span class="stat-value stat-soon">Coming soon</span></div>
+  </section>
+
+  <section class="console-card" aria-label="Sites">
+    <div class="console-tools">
+      <form method="get" class="sites-search">
+        <input type="hidden" name="f" value="<?= $h($filter) ?>">
+        <label for="q">Search sites</label>
+        <input id="q" name="q" type="search" value="<?= $h($q) ?>" placeholder="Domain, cPanel user or email">
+      </form>
+      <div class="chips">
+        <?= $chip('all', 'All') ?><?= $chip('attention', 'Needs attention') ?><?= $chip('suspended', 'Suspended') ?>
+      </div>
+      <form method="post">
+        <input type="hidden" name="csrf" value="<?= $h($csrf) ?>">
+        <button type="submit" class="button ghost small">Refresh from WHM</button>
+      </form>
+    </div>
 <?php if ($sites): ?>
-  <div class="table-wrap">
-  <table class="admin-table">
-    <thead><tr><th>Site</th><th>cPanel user</th><th>Package</th><th>Status</th><th>SSL</th><th>Disk</th><th>Created</th><th>Contact email</th><th></th></tr></thead>
-    <tbody>
-    <?php foreach ($sites as $s): [$sslText, $sslTone] = $sslLabel($s['ssl']); ?>
-      <tr>
-        <td><a href="https://<?= $h($s['domain']) ?>/" rel="noopener" target="_blank"><strong><?= $h($s['domain']) ?></strong></a></td>
-        <td><?= $h($s['user']) ?></td>
-        <td><?= $h($s['plan']) ?></td>
-        <td><?php if ($s['suspended']): ?><span class="tag tag-bad" title="<?= $h($s['suspend_reason']) ?>">Suspended</span><?php else: ?><span class="tag tag-ok">Active</span><?php endif; ?></td>
-        <td><span class="tag tag-<?= $sslTone ?>"><?= $h($sslText) ?></span></td>
-        <td><?= $h($s['disk_used']) ?><?= $s['disk_limit'] !== '' && $s['disk_limit'] !== 'unlimited' ? ' / ' . $h($s['disk_limit']) : '' ?></td>
-        <td><?= $s['created'] ? $h(gmdate('M Y', $s['created'])) : '' ?></td>
-        <td><?= $h($s['email']) ?></td>
-        <td><a class="button ghost small" href="/admin/site.php?user=<?= $h(rawurlencode($s['user'])) ?>">Manage</a></td>
-      </tr>
-    <?php endforeach; ?>
-    </tbody>
-  </table>
-  </div>
-<?php elseif ($data['error'] === null && $q !== ''): ?>
-  <p>No sites match "<?= $h($q) ?>".</p>
+    <div class="table-wrap">
+    <table class="console-table">
+      <thead><tr><th>Site</th><th>Package</th><th>Status</th><th>SSL</th><th>SEO brain</th><th>Last backup</th><th>Disk</th><th>Actions</th></tr></thead>
+      <tbody>
+      <?php foreach ($sites as $s): [$sslText, $sslTone] = $sslInfo($s['ssl']); $manage = '/admin/site.php?user=' . rawurlencode($s['user']); ?>
+        <tr>
+          <td><a href="<?= $h($manage) ?>"><strong><?= $h($s['domain']) ?></strong></a><br><span class="muted"><?= $h($s['user']) ?><?= $s['email'] !== '' ? ' · ' . $h($s['email']) : '' ?></span></td>
+          <td><?= $h($s['plan']) ?></td>
+          <td><?php if ($s['suspended']): ?><span class="pill pill-bad" title="<?= $h($s['suspend_reason']) ?>">Suspended</span><?php elseif (isset($issues[$s['user']])): ?><span class="pill pill-warn">Needs attention</span><?php else: ?><span class="pill pill-ok">Live</span><?php endif; ?></td>
+          <td class="nowrap"><span class="pill pill-<?= $sslTone ?>"><?= $h($sslText) ?></span></td>
+          <td class="muted">Soon</td>
+          <td class="muted">Soon</td>
+          <td class="nowrap"><?= $h($s['disk_used']) ?></td>
+          <td class="nowrap"><a href="https://<?= $h($s['domain']) ?>/" target="_blank" rel="noopener">Open</a> · <a href="<?= $h($manage) ?>">Manage</a></td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+    </div>
+<?php elseif ($data['error'] === null): ?>
+    <p class="console-empty">No sites match.</p>
 <?php endif; ?>
-</main>
-</body>
-</html>
+  </section>
+
+  <section class="console-pair">
+    <div class="console-card console-pad">
+      <h2>Needs attention</h2>
+<?php if ($issues): ?>
+      <ul>
+      <?php foreach ($issues as $user => $list): ?>
+        <li><a href="/admin/site.php?user=<?= $h(rawurlencode($user)) ?>"><?= $h($byUser[$user]['domain'] ?? $user) ?></a>: <?= $h(implode(', ', $list)) ?></li>
+      <?php endforeach; ?>
+      </ul>
+<?php else: ?>
+      <p class="muted">Nothing right now. Every site is live with a valid certificate.</p>
+<?php endif; ?>
+    </div>
+    <div class="console-card console-pad">
+      <h2>Recent activity</h2>
+<?php if ($recent): ?>
+      <ul>
+      <?php foreach ($recent as $e): ?>
+        <li><?= $h(gmdate('M j, H:i', (int)$e['at'])) ?> UTC · <?= $h(str_replace('_', ' ', (string)$e['action'])) ?> · <?= $h($e['target']) ?><?= $e['ok'] ? '' : ' (failed)' ?></li>
+      <?php endforeach; ?>
+      </ul>
+      <p><a href="/admin/audit.php">Full audit log</a></p>
+<?php else: ?>
+      <p class="muted">No changes yet. Actions you take on a site show up here.</p>
+<?php endif; ?>
+    </div>
+  </section>
+<?php if ($data['fetched']): ?>
+  <p class="muted small-print">Read from WHM <?= $h(gmdate('M j, H:i', (int)$data['fetched'])) ?> UTC · <?= count($data['sites']) ?> accounts</p>
+<?php endif; ?>
+<?php ae_admin_foot();

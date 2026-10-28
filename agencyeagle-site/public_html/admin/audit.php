@@ -9,7 +9,7 @@ $email = ae_require_admin();
 ae_send_security_headers();
 $h = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES);
 $entries = ae_whm_audit_entries();
-ae_admin_head('Audit log', $email);
+ae_admin_head('Audit log', $email, 'audit');
 ?>
   <h1>Audit log</h1>
   <p>The last 200 changes made to hosting accounts from this admin. Passwords are never logged.</p>
