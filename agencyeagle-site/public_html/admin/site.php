@@ -4,6 +4,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/../_private/app/auth.php';
 require_once __DIR__ . '/../_private/app/whm.php';
 require_once __DIR__ . '/../_private/app/admin_layout.php';
+require_once __DIR__ . '/../_private/app/brain.php';
+require_once __DIR__ . '/../_private/app/backups.php';
 
 $email = ae_require_admin();
 ae_send_security_headers();
@@ -31,8 +33,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         switch ($action) {
             case 'login':
-                $data = ae_whm_act($email, 'cpanel_login', $user, 'create_user_session', ['user' => $user, 'service' => 'cpaneld']);
+                $args = ['user' => $user, 'service' => 'cpaneld'];
+                if (($_POST['app'] ?? '') === 'backups') {
+                    $args['app'] = 'Backup';
+                }
+                $data = ae_whm_act($email, 'cpanel_login', $user, 'create_user_session', $args);
                 ae_flash(['ok' => 'Your cPanel login link is ready. It works once, for a few minutes.', 'link' => (string)($data['url'] ?? '')]);
+                break;
+            case 'brain':
+                @set_time_limit(120);
+                $r = ae_brain_score($site['domain']);
+                ae_flash(['ok' => 'SEO brain scored ' . $site['domain'] . ': ' . $r['score'] . '/100.']);
+                break;
+            case 'backup':
+                ae_backup_start($email, $user, $site['email']);
+                ae_flash(['ok' => 'Full backup started. It usually takes a few minutes; refresh the list below to see it. cPanel also emails ' . ($site['email'] ?: 'the account contact') . ' when it finishes.']);
+                break;
+            case 'backups_refresh':
+                ae_backup_list($user);
+                ae_flash(['ok' => 'Backup list refreshed.']);
                 break;
             case 'password':
                 $pw = ae_random_password();
@@ -86,6 +105,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $flash = ae_flash();
 $packages = ae_whm_packages();
+$brain = ae_brain_get($site['domain']);
+$backups = ae_backup_cached($user);
 $csrf = ae_csrf_token();
 $form = static function (string $action, string $label, string $class = 'button', string $extra = '') use ($h, $csrf, $user): string {
     return '<form method="post" class="site-action">'
@@ -122,6 +143,52 @@ ae_admin_head($site['domain'], $email, 'sites');
     <dt>Created</dt><dd><?= $site['created'] ? $h(gmdate('M j, Y', $site['created'])) : '' ?></dd>
     <dt>Owner</dt><dd><?= $h($site['owner']) ?></dd>
   </dl>
+
+  <div class="site-actions site-actions-wide">
+    <section class="site-card">
+      <h3>SEO brain</h3>
+<?php if ($brain): $tone = ae_brain_tone($brain); ?>
+      <p class="brain-score"><span class="brain-num brain-<?= $tone ?>"><?= (int)$brain['score'] ?></span>/100 · <?= $h($brain['grade']['label']) ?></p>
+      <p>Checked <?= $h(gmdate('M j, H:i', (int)$brain['at'])) ?> UTC · <?= (int)$brain['passed'] ?> of <?= (int)$brain['checked'] ?> checks pass<?= $brain['reached'] ? '' : ' · couldn\'t reach the site: ' . $h($brain['error']) ?></p>
+<?php if ($brain['fixes']): ?>
+      <p class="card-label">Top fixes</p>
+      <ol class="fix-list">
+      <?php foreach (array_slice($brain['fixes'], 0, 5) as $f): ?>
+        <li><strong><?= $h($f['label']) ?></strong><br><span class="muted"><?= $h($f['fix'] ?: $f['detail']) ?></span></li>
+      <?php endforeach; ?>
+      </ol>
+<?php endif; ?>
+<?php else: ?>
+      <p>Not scored yet. The brain checks crawl access for Google, Bing and AI assistants, indexing, schema, llms.txt, speed and more.</p>
+<?php endif; ?>
+      <?= $form('brain', $brain ? 'Rescore now' : 'Score this site', 'button ghost') ?>
+    </section>
+    <section class="site-card">
+      <h3>Backups</h3>
+      <p>Full backups (files, databases and email) saved in the account's home folder.</p>
+<?php if ($backups && $backups['files']): ?>
+      <ul class="backup-list">
+      <?php foreach (array_slice($backups['files'], 0, 5) as $b): ?>
+        <li><span><?= $h(gmdate('M j, Y H:i', $b['at'])) ?> UTC</span><span class="muted"><?= $h(ae_human_size($b['size'])) ?></span></li>
+      <?php endforeach; ?>
+      </ul>
+<?php elseif ($backups): ?>
+      <p class="muted">No backups in the home folder yet.</p>
+<?php else: ?>
+      <p class="muted">Backup list not loaded yet.</p>
+<?php endif; ?>
+      <div class="card-buttons">
+        <?= $form('backup', 'Back up now') ?>
+        <?= $form('backups_refresh', 'Refresh list', 'button ghost') ?>
+        <?= $form('login', 'Download in cPanel', 'button ghost', '<input type="hidden" name="app" value="backups">') ?>
+      </div>
+    </section>
+    <section class="site-card">
+      <h3>Connect your AI</h3>
+      <p>A Site Brief for Claude, ChatGPT or a developer: the business, the account, the SEO brain's fix list and the Agency Eagle HTML and SEO standards every page must pass.</p>
+      <a class="button ghost" href="/admin/brief.php?user=<?= $h(rawurlencode($user)) ?>">Download Site Brief (.md)</a>
+    </section>
+  </div>
 
   <h2>Manage</h2>
   <div class="site-actions">

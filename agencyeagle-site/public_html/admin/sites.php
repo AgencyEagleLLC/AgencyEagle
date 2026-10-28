@@ -4,17 +4,33 @@ declare(strict_types=1);
 require_once __DIR__ . '/../_private/app/auth.php';
 require_once __DIR__ . '/../_private/app/whm.php';
 require_once __DIR__ . '/../_private/app/admin_layout.php';
+require_once __DIR__ . '/../_private/app/brain.php';
+require_once __DIR__ . '/../_private/app/backups.php';
 
 $email = ae_require_admin();
 ae_send_security_headers();
 $h = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES);
 
-$refresh = $_SERVER['REQUEST_METHOD'] === 'POST' && ae_check_csrf();
-$data = ae_whm_sites($refresh);
-if ($refresh) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ae_check_csrf()) {
+    if (($_POST['action'] ?? '') === 'score_all') {
+        // Score every live site whose last check is over a week old (or never ran).
+        @set_time_limit(600);
+        ignore_user_abort(true);
+        $n = 0;
+        foreach (ae_whm_sites()['sites'] as $s) {
+            if (!$s['suspended'] && ae_brain_is_stale(ae_brain_get($s['domain']))) {
+                ae_brain_score($s['domain']);
+                $n++;
+            }
+        }
+        ae_flash(['ok' => $n ? "SEO brain scored $n site" . ($n === 1 ? '' : 's') . '.' : 'Every site was scored in the last week. Rescore one from its Manage page.']);
+    } else {
+        ae_whm_sites(true);
+    }
     header('Location: /admin/sites.php');
     exit;
 }
+$data = ae_whm_sites();
 
 /** [label, tone, days left or null] for a site's certificate. */
 $sslInfo = static function (?array $ssl): array {
@@ -64,6 +80,12 @@ $chip = static function (string $key, string $label) use ($filter, $q, $h): stri
     return '<a class="chip" href="' . $h($href) . '"' . ($filter === $key ? ' aria-current="true"' : '') . '>' . $h($label) . '</a>';
 };
 $byUser = array_column($data['sites'], null, 'user');
+$brains = [];
+foreach ($data['sites'] as $s) {
+    $brains[$s['domain']] = ae_brain_get($s['domain']);
+}
+$scored = array_filter($brains);
+$avgScore = $scored ? (int)round(array_sum(array_column($scored, 'score')) / count($scored)) : null;
 $recent = array_slice(ae_whm_audit_entries(6), 0, 6);
 $csrf = ae_csrf_token();
 $flash = ae_flash();
@@ -90,7 +112,7 @@ ae_admin_head('Client sites', $email, 'sites');
     <div class="stat"><span class="stat-label">Active sites</span><span class="stat-value"><?= $active ?></span></div>
     <div class="stat"><span class="stat-label">Suspended</span><span class="stat-value"><?= $suspended ?></span></div>
     <div class="stat"><span class="stat-label">Need attention</span><span class="stat-value<?= $issues ? ' stat-warn' : '' ?>"><?= count($issues) ?></span></div>
-    <div class="stat"><span class="stat-label">Last off-server backup</span><span class="stat-value stat-soon">Coming soon</span></div>
+    <div class="stat"><span class="stat-label">Average SEO brain score</span><span class="stat-value<?= $avgScore === null ? ' stat-soon' : '' ?>"><?= $avgScore === null ? 'Not scored yet' : $avgScore . '<small>/100</small>' ?></span></div>
   </section>
 
   <section class="console-card" aria-label="Sites">
@@ -103,10 +125,17 @@ ae_admin_head('Client sites', $email, 'sites');
       <div class="chips">
         <?= $chip('all', 'All') ?><?= $chip('attention', 'Needs attention') ?><?= $chip('suspended', 'Suspended') ?>
       </div>
-      <form method="post">
-        <input type="hidden" name="csrf" value="<?= $h($csrf) ?>">
-        <button type="submit" class="button ghost small">Refresh from WHM</button>
-      </form>
+      <div class="tool-buttons">
+        <form method="post">
+          <input type="hidden" name="csrf" value="<?= $h($csrf) ?>">
+          <input type="hidden" name="action" value="score_all">
+          <button type="submit" class="button ghost small">Score all sites</button>
+        </form>
+        <form method="post">
+          <input type="hidden" name="csrf" value="<?= $h($csrf) ?>">
+          <button type="submit" class="button ghost small">Refresh from WHM</button>
+        </form>
+      </div>
     </div>
 <?php if ($sites): ?>
     <div class="table-wrap">
@@ -119,8 +148,9 @@ ae_admin_head('Client sites', $email, 'sites');
           <td><?= $h($s['plan']) ?></td>
           <td><?php if ($s['suspended']): ?><span class="pill pill-bad" title="<?= $h($s['suspend_reason']) ?>">Suspended</span><?php elseif (isset($issues[$s['user']])): ?><span class="pill pill-warn">Needs attention</span><?php else: ?><span class="pill pill-ok">Live</span><?php endif; ?></td>
           <td class="nowrap"><span class="pill pill-<?= $sslTone ?>"><?= $h($sslText) ?></span></td>
-          <td class="muted">Soon</td>
-          <td class="muted">Soon</td>
+          <?php $b = $brains[$s['domain']]; $bk = ae_backup_cached($s['user']); ?>
+          <td class="nowrap"><?php if ($b): ?><span class="pill pill-<?= ae_brain_tone($b) ?>"><?= (int)$b['score'] ?>/100</span><?php else: ?><span class="muted">Not scored</span><?php endif; ?></td>
+          <td class="nowrap"><?php if ($bk && $bk['files']): ?><?= $h(gmdate('M j, Y', $bk['files'][0]['at'])) ?><?php elseif ($bk): ?><span class="muted">None</span><?php else: ?><span class="muted">Not checked</span><?php endif; ?></td>
           <td class="nowrap"><?= $h($s['disk_used']) ?></td>
           <td class="nowrap"><a href="https://<?= $h($s['domain']) ?>/" target="_blank" rel="noopener">Open</a> · <a href="<?= $h($manage) ?>">Manage</a></td>
         </tr>

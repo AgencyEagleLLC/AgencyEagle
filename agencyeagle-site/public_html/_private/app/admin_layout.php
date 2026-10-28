@@ -19,7 +19,7 @@ function ae_admin_head(string $title, string $email, string $active = 'sites'): 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>' . $h($title) . ' | Agency Eagle Admin</title>
-<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="' . ae_css_href() . '">
 </head>
 <body class="admin console">
 <header class="console-bar">

@@ -373,3 +373,20 @@ body.console { background: #f4f7fa; }
 .console-main section.site-card { padding: 18px; border-radius: 10px; border-color: #dde5ec; }
 .console-main section.site-card-danger { border-color: var(--danger); }
 .console .stat-row { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+
+/* Admin: SEO brain, backups, Site Brief */
+.stat-value small { font-size: .9rem; color: var(--muted); font-weight: 600; }
+.tool-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.site-actions-wide { margin-bottom: 28px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.brain-score { font-size: 1rem; color: var(--ink) !important; margin-bottom: 4px !important; }
+.brain-num { font-size: 2.6rem; font-weight: 800; line-height: 1; }
+.brain-ok { color: #1d6b3c; }
+.brain-warn { color: #b3541e; }
+.brain-bad { color: #a1281e; }
+.card-label { font-weight: 600; color: var(--heading) !important; margin: 8px 0 4px !important; }
+.fix-list { margin: 0 0 14px; padding-left: 20px; line-height: 1.5; }
+.fix-list li { margin-bottom: 8px; }
+.backup-list { list-style: none; padding: 0 !important; margin: 0 0 12px !important; }
+.backup-list li { display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid #edf1f5; padding: 6px 0; }
+.card-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.card-buttons .site-action { margin: 0; }

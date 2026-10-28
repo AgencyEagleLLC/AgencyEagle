@@ -60,7 +60,7 @@ $csrf = ae_csrf_token();
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Sign in | Agency Eagle Admin</title>
-<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="<?= ae_css_href() ?>">
 </head>
 <body class="admin-auth">
 <main class="auth-card">
