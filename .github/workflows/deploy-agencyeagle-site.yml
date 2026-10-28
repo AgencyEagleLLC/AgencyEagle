@@ -42,6 +42,9 @@ jobs:
       - name: Check site against standards
         run: python3 agencyeagle-site/public_html/_private/tools/check_site.py agencyeagle-site/public_html
 
+      - name: Bundle the standards for Site Briefs
+        run: cp agencyeagle-site/STANDARDS.md agencyeagle-site/public_html/_private/STANDARDS.md
+
       - name: Write Google sign-in config
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -132,6 +135,8 @@ jobs:
             _private/data/crm/**
             _private/data/breakglass.token
             _private/data/whm-audit.jsonl
+            _private/data/brain/**
+            _private/data/backups/**
 
       # Tell Bing (and the other IndexNow engines) the pages changed, instead of waiting for a crawl.
       # The key is public by design: it is served at /<key>.txt.

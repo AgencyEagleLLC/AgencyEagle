@@ -18,7 +18,7 @@ function ae_crm_head(string $title, string $email, string $active): void
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title><?= ae_h($title) ?> | Agency Eagle CRM</title>
-<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="<?= ae_css_href() ?>">
 </head>
 <body class="admin">
 <header class="admin-bar">

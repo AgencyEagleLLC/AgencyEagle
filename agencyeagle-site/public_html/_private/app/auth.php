@@ -279,3 +279,10 @@ function ae_send_security_headers(): void
     header("Content-Security-Policy: default-src 'self'; style-src 'self'; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'");
     header('Cache-Control: no-store');
 }
+
+/** Stylesheet URL with a version stamp, so a deploy is never hidden behind a cached copy. */
+function ae_css_href(): string
+{
+    $f = __DIR__ . '/../../assets/site.css';
+    return '/assets/site.css?v=' . (is_file($f) ? filemtime($f) : '1');
+}
