@@ -39,6 +39,13 @@ function ae_whm_call(array $conf, string $fn, array $args = []): array
         throw new RuntimeException('WHM did not answer (' . ($err ?: 'HTTP ' . $status) . ')');
     }
     $json = json_decode($body, true);
+    if ($fn === 'cpanel' && is_array($json['result'] ?? null)) {
+        // The cPanel bridge returns the UAPI result itself: {"result": {"status", "errors", "data"}}.
+        if (($json['result']['status'] ?? 0) !== 1) {
+            throw new RuntimeException('cPanel said: ' . implode('; ', (array)($json['result']['errors'] ?? ['request failed'])));
+        }
+        return $json['result'];
+    }
     if (($json['metadata']['result'] ?? 0) !== 1) {
         throw new RuntimeException('WHM said: ' . (string)($json['metadata']['reason'] ?? 'HTTP ' . $status));
     }
@@ -244,7 +251,7 @@ a{color:#146ba7}
 /** Saves a file into an account through cPanel UAPI (Fileman::save_file_content). */
 function ae_whm_save_file(string $who, string $user, string $dir, string $file, string $content): void
 {
-    $data = ae_whm_act($who, 'save_file', $user . ':' . $dir . '/' . $file, 'cpanel', [
+    ae_whm_act($who, 'save_file', $user . ':' . $dir . '/' . $file, 'cpanel', [
         'cpanel_jsonapi_user' => $user,
         'cpanel_jsonapi_apiversion' => 3,
         'cpanel_jsonapi_module' => 'Fileman',
@@ -253,8 +260,4 @@ function ae_whm_save_file(string $who, string $user, string $dir, string $file, 
         'file' => $file,
         'content' => $content,
     ]);
-    $uapi = $data['uapi'] ?? $data['result'] ?? null;
-    if (is_array($uapi) && isset($uapi['status']) && !$uapi['status']) {
-        throw new RuntimeException('cPanel said: ' . implode('; ', (array)($uapi['errors'] ?? ['could not save the file'])));
-    }
 }
