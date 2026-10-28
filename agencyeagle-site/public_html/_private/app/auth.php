@@ -23,7 +23,12 @@ function ae_session_start(): void
     if (session_status() === PHP_SESSION_ACTIVE) {
         return;
     }
-    session_name('ae_admin');
+    // Renamed from 'ae_admin' when the cookie path widened from /admin to /: browsers kept the
+    // old /admin cookie and sent it first, so sign-in never stuck. Clear that old cookie.
+    session_name('ae_session');
+    if (isset($_COOKIE['ae_admin']) && !headers_sent()) {
+        setcookie('ae_admin', '', ['expires' => 1, 'path' => '/admin', 'secure' => getenv('AE_DEV') !== '1', 'httponly' => true, 'samesite' => 'Lax']);
+    }
     session_set_cookie_params([
         'lifetime' => 0,
         'path' => '/', // shared by /admin and the client /portal; each checks its own session key
