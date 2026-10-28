@@ -26,7 +26,7 @@ function ae_session_start(): void
     session_name('ae_admin');
     session_set_cookie_params([
         'lifetime' => 0,
-        'path' => '/admin',
+        'path' => '/', // shared by /admin and the client /portal; each checks its own session key
         'secure' => getenv('AE_DEV') !== '1', // AE_DEV=1 only for local testing over http
         'httponly' => true,
         'samesite' => 'Lax', // Lax so the cookie survives the redirect back from Google
@@ -67,8 +67,9 @@ function ae_b64url(string $bytes): string
 }
 
 /** URL that starts Google sign-in (state + nonce + PKCE kept in the session). */
-function ae_google_login_url(array $conf): string
+function ae_google_login_url(array $conf, string $purpose = 'admin'): string
 {
+    $_SESSION['oauth_purpose'] = $purpose;
     $_SESSION['oauth_state'] = ae_b64url(random_bytes(24));
     $_SESSION['oauth_nonce'] = ae_b64url(random_bytes(24));
     $_SESSION['oauth_verifier'] = ae_b64url(random_bytes(48));
@@ -86,9 +87,14 @@ function ae_google_login_url(array $conf): string
     ]);
 }
 
-/** Finish Google sign-in. Returns 'ok' or a short error key. */
+/**
+ * Finish Google sign-in. Returns 'ok' (admin), 'portal' (client portal) or a short error key.
+ * Admins must be in the allowlist; portal users must own at least one site (clients.php).
+ */
 function ae_google_callback(array $conf, array $query): string
 {
+    $purpose = $_SESSION['oauth_purpose'] ?? 'admin';
+    unset($_SESSION['oauth_purpose']);
     $state = $_SESSION['oauth_state'] ?? '';
     $nonce = $_SESSION['oauth_nonce'] ?? '';
     $verifier = $_SESSION['oauth_verifier'] ?? '';
@@ -137,6 +143,15 @@ function ae_google_callback(array $conf, array $query): string
         return 'google';
     }
     $email = strtolower((string)($claims['email'] ?? ''));
+    if ($purpose === 'portal') {
+        require_once __DIR__ . '/clients.php';
+        if (!ae_portal_sites_for($email)) {
+            return 'not_allowed';
+        }
+        session_regenerate_id(true);
+        $_SESSION['portal_email'] = $email;
+        return 'portal';
+    }
     if (!in_array($email, $conf['allowed_emails'], true)) {
         return 'not_allowed';
     }
@@ -269,6 +284,17 @@ function ae_require_admin(): string
         exit;
     }
     return $_SESSION['admin_email'];
+}
+
+/** The signed-in client's email, or a redirect to the portal sign-in. */
+function ae_require_portal(): string
+{
+    ae_session_start();
+    if (empty($_SESSION['portal_email'])) {
+        header('Location: /portal/');
+        exit;
+    }
+    return $_SESSION['portal_email'];
 }
 
 function ae_send_security_headers(): void

@@ -390,3 +390,14 @@ body.console { background: #f4f7fa; }
 .backup-list li { display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid #edf1f5; padding: 6px 0; }
 .card-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .card-buttons .site-action { margin: 0; }
+
+/* Client portal */
+.portal-bar { background: #fff; color: var(--ink); border-bottom: 1px solid #dde5ec; }
+.portal-bar a { color: var(--brand); }
+.portal-bar .console-brand strong { color: var(--heading); }
+.portal-bar .console-pill { background: #e5f1fa; color: var(--brand-dark); }
+.portal-signin { max-width: 460px; margin: 40px auto; }
+.portal-signin h1 { margin-top: 0; }
+.portal-site { text-decoration: none; color: var(--ink); }
+.portal-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.site-action textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); font: inherit; margin-bottom: 12px; }

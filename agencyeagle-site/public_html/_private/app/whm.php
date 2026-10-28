@@ -39,6 +39,13 @@ function ae_whm_call(array $conf, string $fn, array $args = []): array
         throw new RuntimeException('WHM did not answer (' . ($err ?: 'HTTP ' . $status) . ')');
     }
     $json = json_decode($body, true);
+    if ($fn === 'cpanel' && is_array($json['cpanelresult'] ?? null)) {
+        // cPanel API 2 answers through the same bridge as {"cpanelresult": {"data", "error"}}.
+        if (!empty($json['cpanelresult']['error'])) {
+            throw new RuntimeException('cPanel said: ' . $json['cpanelresult']['error']);
+        }
+        return $json['cpanelresult'];
+    }
     if ($fn === 'cpanel' && is_array($json['result'] ?? null)) {
         // The cPanel bridge returns the UAPI result itself: {"result": {"status", "errors", "data"}}.
         if (($json['result']['status'] ?? 0) !== 1) {
@@ -248,9 +255,25 @@ a{color:#146ba7}
 ';
 }
 
-/** Saves a file into an account through cPanel UAPI (Fileman::save_file_content). */
+/** Saves a file into an account through cPanel UAPI (Fileman::save_file_content), creating its folder if needed. */
 function ae_whm_save_file(string $who, string $user, string $dir, string $file, string $content): void
 {
+    $conf = ae_whm_conf();
+    if ($conf !== null && str_contains($dir, '/')) {
+        // UAPI can't make folders; cPanel API 2 Fileman::mkdir can. "Already exists" is fine.
+        try {
+            ae_whm_call($conf, 'cpanel', [
+                'cpanel_jsonapi_user' => $user,
+                'cpanel_jsonapi_apiversion' => 2,
+                'cpanel_jsonapi_module' => 'Fileman',
+                'cpanel_jsonapi_func' => 'mkdir',
+                'path' => '/home/' . $user . '/' . dirname($dir),
+                'name' => basename($dir),
+            ]);
+        } catch (RuntimeException $e) {
+            // Most often the folder is already there; save_file_content reports anything real.
+        }
+    }
     ae_whm_act($who, 'save_file', $user . ':' . $dir . '/' . $file, 'cpanel', [
         'cpanel_jsonapi_user' => $user,
         'cpanel_jsonapi_apiversion' => 3,

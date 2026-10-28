@@ -51,3 +51,25 @@ function ae_flash(?array $set = null): ?array
     unset($_SESSION['flash']);
     return $f;
 }
+
+/** Header for the client portal (white bar, like the client mockup). */
+function ae_portal_head(string $title, ?string $email, ?string $domain = null): void
+{
+    $h = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES);
+    echo '<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>' . $h($title) . ' | Agency Eagle</title>
+<link rel="stylesheet" href="' . ae_css_href() . '">
+</head>
+<body class="admin console portal">
+<header class="console-bar portal-bar">
+  <a class="console-brand" href="/portal/"><strong>' . ($domain ? $h($domain) : 'Agency Eagle') . '</strong> <span class="console-pill">Site admin</span></a>
+  ' . ($email ? '<span class="console-user">' . $h($email) . ' · <a href="/portal/logout.php">Sign out</a></span>' : '<span class="console-user">Hosted by <a href="https://agencyeagle.com/">Agency Eagle</a></span>') . '
+</header>
+<main class="console-main">
+';
+}

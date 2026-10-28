@@ -6,6 +6,7 @@ require_once __DIR__ . '/../_private/app/whm.php';
 require_once __DIR__ . '/../_private/app/admin_layout.php';
 require_once __DIR__ . '/../_private/app/brain.php';
 require_once __DIR__ . '/../_private/app/backups.php';
+require_once __DIR__ . '/../_private/app/clients.php';
 
 $email = ae_require_admin();
 ae_send_security_headers();
@@ -48,6 +49,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'backup':
                 ae_backup_start($email, $user, $site['email']);
                 ae_flash(['ok' => 'Full backup started. It usually takes a few minutes; refresh the list below to see it. cPanel also emails ' . ($site['email'] ?: 'the account contact') . ' when it finishes.']);
+                break;
+            case 'client_access':
+                $list = ae_client_set_emails($site['domain'], preg_split('/[\s,;]+/', (string)($_POST['emails'] ?? '')) ?: []);
+                ae_whm_audit($email, 'client_access', $site['domain'], true, implode(', ', $list));
+                ae_flash(['ok' => $list ? 'Portal access saved for ' . implode(', ', $list) . '.' : 'Portal access removed. Nobody can sign in to this site\'s portal now.']);
+                break;
+            case 'install_admin':
+                $existing = ae_uapi($user, 'Fileman', 'list_files', ['dir' => '/home/' . $user . '/public_html', 'types' => 'dir|file']);
+                foreach ((array)($existing['data'] ?? []) as $f) {
+                    if (($f['file'] ?? '') === 'admin') {
+                        throw new RuntimeException('This site already has an /admin folder (maybe WordPress or another app), so nothing was changed. Clients can use https://agencyeagle.com/portal/ directly.');
+                    }
+                }
+                ae_whm_save_file($email, $user, 'public_html/admin', 'index.php', ae_client_admin_stub($site['domain']));
+                ae_flash(['ok' => $site['domain'] . '/admin now opens the client portal.']);
                 break;
             case 'backups_refresh':
                 ae_backup_list($user);
@@ -148,7 +164,11 @@ ae_admin_head($site['domain'], $email, 'sites');
     <section class="site-card">
       <h3>SEO brain</h3>
 <?php if ($brain): $tone = ae_brain_tone($brain); ?>
+<?php if (!$brain['reached']): ?>
+      <p class="brain-score"><span class="brain-num brain-bad">Can't reach</span></p>
+<?php else: ?>
       <p class="brain-score"><span class="brain-num brain-<?= $tone ?>"><?= (int)$brain['score'] ?></span>/100 · <?= $h($brain['grade']['label']) ?></p>
+<?php endif; ?>
       <p>Checked <?= $h(gmdate('M j, H:i', (int)$brain['at'])) ?> UTC · <?= (int)$brain['passed'] ?> of <?= (int)$brain['checked'] ?> checks pass<?= $brain['reached'] ? '' : ' · couldn\'t reach the site: ' . $h($brain['error']) ?></p>
 <?php if ($brain['fixes']): ?>
       <p class="card-label">Top fixes</p>
@@ -182,6 +202,12 @@ ae_admin_head($site['domain'], $email, 'sites');
         <?= $form('backups_refresh', 'Refresh list', 'button ghost') ?>
         <?= $form('login', 'Download in cPanel', 'button ghost', '<input type="hidden" name="app" value="backups">') ?>
       </div>
+    </section>
+    <section class="site-card">
+      <h3>Client portal access</h3>
+      <p>Google accounts that can sign in at <a href="https://<?= $h($site['domain']) ?>/admin" target="_blank" rel="noopener"><?= $h($site['domain']) ?>/admin</a> (the Agency Eagle portal) to see their SEO score, backups and Site Brief.</p>
+      <?= $form('client_access', 'Save access', 'button ghost', '<label for="emails">Google emails, one per line</label><textarea id="emails" name="emails" rows="3">' . $h(implode("\n", ae_client_emails($site['domain']))) . '</textarea>') ?>
+      <?= $form('install_admin', 'Install /admin link on their site', 'button ghost') ?>
     </section>
     <section class="site-card">
       <h3>Connect your AI</h3>

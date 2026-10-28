@@ -1,6 +1,7 @@
-# Search engines and AI assistants are welcome. Only the admin area is off limits.
+# Search engines and AI assistants are welcome. Only the admin and client portal are off limits.
 User-agent: *
 Disallow: /admin/
+Disallow: /portal/
 Disallow: /_private/
 
 Sitemap: https://agencyeagle.com/sitemap.xml
