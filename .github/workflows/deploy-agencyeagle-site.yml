@@ -95,6 +95,7 @@ jobs:
             _private/data/quiz/**
             _private/data/crm/**
             _private/data/breakglass.token
+            _private/data/whm-audit.jsonl
 
       # Tell Bing (and the other IndexNow engines) the pages changed, instead of waiting for a crawl.
       # The key is public by design: it is served at /<key>.txt.
