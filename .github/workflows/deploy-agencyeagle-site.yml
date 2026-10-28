@@ -99,18 +99,11 @@ jobs:
               req = urllib.request.Request(f"https://{host}:2087/json-api/cpanel?api.version=1", data=body,
                                            headers={"Authorization": f"whm {os.environ['WHM_USER']}:{os.environ['WHM_API_TOKEN']}"})
               res = json.load(urllib.request.urlopen(req, timeout=60))
-              meta = res.get("metadata", {})
-              inner = (res.get("data") or {}).get("uapi") or res.get("result") or {}
-              ok = meta.get("result") == 1 and inner.get("status", 1) == 1
-              why = inner.get("errors") or meta.get("reason")
-              if not ok:
-                  # Shape only, for debugging; never includes the password.
-                  print(f"{func}: metadata={meta} status={inner.get('status')} errors={inner.get('errors')} messages={inner.get('messages')} keys={list(res)}/{list(res.get('data') or {})}", flush=True)
-              return ok, why
+              # The WHM "cpanel" bridge answers with the UAPI result itself: {"result": {"status": 1, "errors": ...}}.
+              inner = res.get("result") or {}
+              return inner.get("status") == 1, inner.get("errors") or res.get("metadata", {}).get("reason")
           login, domain = os.environ["FTP_LOGIN"], os.environ["FTP_DOMAIN"]
           ok, why = uapi("passwd", user=login, domain=domain, **{"pass": pw})
-          if not ok:
-              ok, why = uapi("passwd", user=f"{login}@{domain}", **{"pass": pw})
           if not ok:
               print(f"Changing the password didn't work ({why}); creating the FTP login instead.", flush=True)
               ok, why = uapi("add_ftp", user=login, domain=domain, homedir="public_html", quota=0, **{"pass": pw})
