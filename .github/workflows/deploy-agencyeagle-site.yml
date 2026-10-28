@@ -103,11 +103,16 @@ jobs:
               inner = (res.get("data") or {}).get("uapi") or res.get("result") or {}
               ok = meta.get("result") == 1 and inner.get("status", 1) == 1
               why = inner.get("errors") or meta.get("reason")
+              if not ok:
+                  # Shape only, for debugging; never includes the password.
+                  print(f"{func}: metadata={meta} status={inner.get('status')} errors={inner.get('errors')} messages={inner.get('messages')} keys={list(res)}/{list(res.get('data') or {})}", flush=True)
               return ok, why
           login, domain = os.environ["FTP_LOGIN"], os.environ["FTP_DOMAIN"]
           ok, why = uapi("passwd", user=login, domain=domain, **{"pass": pw})
           if not ok:
-              print(f"Changing the password didn't work ({why}); creating the FTP login instead.")
+              ok, why = uapi("passwd", user=f"{login}@{domain}", **{"pass": pw})
+          if not ok:
+              print(f"Changing the password didn't work ({why}); creating the FTP login instead.", flush=True)
               ok, why = uapi("add_ftp", user=login, domain=domain, homedir="public_html", quota=0, **{"pass": pw})
           if not ok:
               raise SystemExit(f"Couldn't prepare the deploy FTP login: {why}")
