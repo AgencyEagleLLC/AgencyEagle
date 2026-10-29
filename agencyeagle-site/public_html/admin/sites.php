@@ -13,24 +13,22 @@ ae_send_security_headers();
 $h = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ae_check_csrf()) {
-    if (($_POST['action'] ?? '') === 'watch_all') {
-        // The nightly sweep without backups: site watch on every live site, plus stale SEO brains.
-        @set_time_limit(1200);
-        ignore_user_abort(true);
-        $run = ae_nightly_run(false);
-        ae_flash($run === null ? ['error' => 'A check is already running. Give it a few minutes.'] : ['ok' => 'Checked every live site in ' . (int)ceil($run['took'] / 60) . ' min. Anything new is listed under Needs attention' . (ae_admin_emails() ? ' and was emailed to you' : '') . '.']);
-    } elseif (($_POST['action'] ?? '') === 'score_all') {
-        // Score every live site whose last check is over a week old (or never ran).
-        @set_time_limit(600);
-        ignore_user_abort(true);
-        $n = 0;
+    $action = (string)($_POST['action'] ?? '');
+    if ($action === 'watch_all' || $action === 'score_all') {
+        // One site per request on /admin/run.php, so nothing hits the proxy's one-minute limit.
+        $steps = [];
         foreach (ae_whm_sites()['sites'] as $s) {
-            if (!$s['suspended'] && ae_brain_is_stale(ae_brain_get($s['domain']))) {
-                ae_brain_score($s['domain']);
-                $n++;
+            if (!$s['suspended'] && ($action === 'watch_all' || ae_brain_is_stale(ae_brain_get($s['domain'])))) {
+                $steps[] = [$action === 'watch_all' ? 'watch' : 'brain', $s['user']];
             }
         }
-        ae_flash(['ok' => $n ? "SEO brain scored $n site" . ($n === 1 ? '' : 's') . '.' : 'Every site was scored in the last week. Rescore one from its Manage page.']);
+        if (!$steps) {
+            ae_flash(['ok' => 'Every site was scored in the last week. Rescore one from its Manage page.']);
+        } else {
+            $_SESSION['batch'] = ['title' => $action === 'watch_all' ? 'Checking every site' : 'Scoring sites', 'steps' => $steps, 'i' => 0, 'lines' => [], 'new' => []];
+            header('Location: /admin/run.php');
+            exit;
+        }
     } else {
         ae_whm_sites(true);
     }

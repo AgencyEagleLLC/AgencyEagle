@@ -52,8 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ae_flash(['ok' => 'SEO brain scored ' . $site['domain'] . ': ' . $r['score'] . '/100.']);
                 break;
             case 'watch':
-                @set_time_limit(300);
-                $w = ae_watch_check($site);
+                @set_time_limit(120);
+                session_write_close(); // don't lock this admin's other tabs while it runs
+                $w = ae_watch_check($site, AE_WATCH_WEB_SECONDS);
+                ae_session_start();
                 ae_flash(['ok' => 'Site watch checked ' . $site['domain'] . ': ' . strtolower(ae_watch_label($w)) . '.']);
                 break;
             case 'watch_review':
@@ -64,8 +66,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!ae_golive_check($site)['dns']) {
                     throw new RuntimeException($site['domain'] . ' doesn\'t point at this server yet (A record ' . AE_SERVER_IP . '), so nothing was announced.');
                 }
-                @set_time_limit(300);
-                ae_flash(['ok' => implode(' ', ae_golive_announce($email, $site))]);
+                @set_time_limit(120);
+                session_write_close();
+                $lines = ae_golive_announce($email, $site);
+                ae_session_start();
+                ae_flash(['ok' => implode(' ', $lines)]);
                 break;
             case 'welcome':
                 $to = ae_golive_welcome($email, $site);

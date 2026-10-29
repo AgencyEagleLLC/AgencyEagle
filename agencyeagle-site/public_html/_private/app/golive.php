@@ -89,7 +89,7 @@ function ae_golive_announce(string $who, array $site): array
         $lines[] = 'SEO brain didn\'t run: ' . $e->getMessage();
     }
     try {
-        $w = ae_watch_check($site);
+        $w = ae_watch_check($site, 20);
         $lines[] = 'Site watch is set: ' . strtolower(ae_watch_label($w)) . '.';
     } catch (Throwable $e) {
         $lines[] = 'Site watch didn\'t run: ' . $e->getMessage();
