@@ -12,7 +12,7 @@ require_once __DIR__ . '/site_scan.php';
 
 const AE_WATCH_DIR = __DIR__ . '/../data/watch';
 const AE_WATCH_EXT = '/(\.(php\d?|phtml|phar|inc|js|html?|cgi|pl|py|sh|ini|suspected)|^\.htaccess|^\.user\.ini)$/i';
-const AE_WATCH_SKIP = '#(^|/)(\.git|node_modules|cache|\.well-known|wp-content/uploads|wp-content/cache|wp-content/upgrade|error_log)(/|$)#';
+const AE_WATCH_SKIP = '#(^|/)(\.git|node_modules|cache|\.well-known|wp-content/uploads|wp-content/cache|wp-content/upgrade|wp-content/wflogs|wp-content/updraft|wp-content/ai1wm-backups|wp-content/et-cache|wp-content/litespeed|error_log)(/|$)#';
 const AE_WATCH_MAX_DIRS = 800;
 const AE_WATCH_WEB_SECONDS = 35.0; // file-walk budget inside a web request (the proxy gives up at about 60s)
 const AE_WATCH_SPAM = [
