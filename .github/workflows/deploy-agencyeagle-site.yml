@@ -81,6 +81,23 @@ jobs:
               print("WHM secrets not set; /admin/sites.php will show setup instructions.")
           PY
 
+      # Site watch on agencyeagle.com itself: list what this deploy ships (path and size), so the
+      # admin's own code updates aren't reported as changed files.
+      - name: Write deploy manifest
+        run: |
+          python3 - <<'PY'
+          import json, os
+          root = "agencyeagle-site/public_html"
+          out = {}
+          for d, _, files in os.walk(root):
+              for f in files:
+                  p = os.path.join(d, f)
+                  out[os.path.relpath(p, root)] = os.path.getsize(p)
+          with open(os.path.join(root, "_private/deploy-manifest.json"), "w") as fh:
+              json.dump(out, fh)
+          print(f"{len(out)} files in the manifest")
+          PY
+
       - name: Set a fresh password on the deploy FTP login
         id: ftp
         env:

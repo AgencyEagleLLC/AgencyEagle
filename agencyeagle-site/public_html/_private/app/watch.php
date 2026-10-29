@@ -151,7 +151,13 @@ function ae_watch_alerts(array $w, ?array $site): array
     if ($w['files'] !== null && $base['files'] !== null) {
         $added = $changed = [];
         $covered = isset($base['dirs']) ? array_flip($base['dirs']) : null;
+        // The account this admin runs on: files our own deploy shipped (same path and size) are expected.
+        $shipped = ae_whm_is_protected((string)($w['user'] ?? '')) && is_file(__DIR__ . '/../deploy-manifest.json')
+            ? (json_decode((string)file_get_contents(__DIR__ . '/../deploy-manifest.json'), true) ?: []) : [];
         foreach ($w['files'] as $path => $sig) {
+            if (isset($shipped[$path]) && (int)$shipped[$path] === (int)explode(':', $sig)[0]) {
+                continue;
+            }
             $dir = str_contains($path, '/') ? substr($path, 0, strrpos($path, '/')) : '';
             if ($covered !== null && !isset($covered[$dir])) {
                 continue; // the baseline walk never reached this folder, so nothing to compare with
