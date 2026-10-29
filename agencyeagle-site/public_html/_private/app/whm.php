@@ -88,6 +88,19 @@ function ae_whm_sites(bool $refresh = false): array
         } catch (RuntimeException $e) {
             // SSL details are a bonus; the token may not allow them.
         }
+        // Addon and parked (alias) domains live inside an account, so listaccts only shows the
+        // account's main domain. Pull them in so every hosted domain is listed and searchable.
+        $extra = [];
+        try {
+            foreach (ae_whm_call($conf, 'get_domain_info')['domains'] ?? [] as $d) {
+                $type = (string)($d['domain_type'] ?? '');
+                if ($type === 'addon' || $type === 'parked') {
+                    $extra[(string)($d['user'] ?? '')][] = strtolower((string)($d['domain'] ?? ''));
+                }
+            }
+        } catch (RuntimeException $e) {
+            // Older WHM or a token without it: main domains only.
+        }
         $sites = [];
         foreach ($accts['acct'] ?? [] as $a) {
             $domain = strtolower((string)($a['domain'] ?? ''));
@@ -103,6 +116,7 @@ function ae_whm_sites(bool $refresh = false): array
                 'disk_limit' => (string)($a['disklimit'] ?? ''),
                 'created' => (int)($a['unix_startdate'] ?? 0),
                 'ssl' => $ssl[$domain] ?? null,
+                'other_domains' => array_values(array_unique($extra[(string)($a['user'] ?? '')] ?? [])),
             ];
         }
         usort($sites, fn($x, $y) => strcmp($x['domain'], $y['domain']));
