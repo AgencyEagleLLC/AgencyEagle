@@ -74,3 +74,26 @@ function ae_human_size(int $bytes): string
     }
     return $bytes . ' B';
 }
+
+/** Delete all but the newest $keep backups in the home folder. Returns how many were removed. */
+function ae_backup_rotate(string $who, string $user, int $keep = 2): int
+{
+    $old = array_slice(ae_backup_list($user), $keep);
+    foreach ($old as $f) {
+        $conf = ae_whm_conf();
+        ae_whm_call($conf, 'cpanel', [
+            'cpanel_jsonapi_user' => $user,
+            'cpanel_jsonapi_apiversion' => 2,
+            'cpanel_jsonapi_module' => 'Fileman',
+            'cpanel_jsonapi_func' => 'fileop',
+            'op' => 'unlink',
+            'sourcefiles' => '/home/' . $user . '/' . $f['file'],
+            'doubledecode' => 0,
+        ]);
+        ae_whm_audit($who, 'backup_rotated', $user, true, $f['file']);
+    }
+    if ($old) {
+        ae_backup_list($user);
+    }
+    return count($old);
+}

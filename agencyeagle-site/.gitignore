@@ -8,3 +8,6 @@ public_html/_private/data/whm.conf
 public_html/_private/STANDARDS.md
 public_html/_private/data/brain/
 public_html/_private/data/backups/
+public_html/_private/data/watch/
+public_html/_private/data/nightly.lock
+public_html/_private/data/*.log

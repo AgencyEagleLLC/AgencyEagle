@@ -7,6 +7,7 @@ require_once __DIR__ . '/../_private/app/admin_layout.php';
 require_once __DIR__ . '/../_private/app/brain.php';
 require_once __DIR__ . '/../_private/app/backups.php';
 require_once __DIR__ . '/../_private/app/clients.php';
+require_once __DIR__ . '/../_private/app/watch.php';
 
 $email = ae_require_admin();
 ae_send_security_headers();
@@ -45,6 +46,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 @set_time_limit(120);
                 $r = ae_brain_score($site['domain']);
                 ae_flash(['ok' => 'SEO brain scored ' . $site['domain'] . ': ' . $r['score'] . '/100.']);
+                break;
+            case 'watch':
+                @set_time_limit(300);
+                $w = ae_watch_check($site);
+                ae_flash(['ok' => 'Site watch checked ' . $site['domain'] . ': ' . strtolower(ae_watch_label($w)) . '.']);
+                break;
+            case 'watch_review':
+                ae_watch_review($email, $site);
+                ae_flash(['ok' => 'Marked reviewed. Today\'s pages and files are the new normal for ' . $site['domain'] . '.']);
                 break;
             case 'backup':
                 ae_backup_start($email, $user, $site['email']);
@@ -123,6 +133,7 @@ $flash = ae_flash();
 $packages = ae_whm_packages();
 $brain = ae_brain_get($site['domain']);
 $backups = ae_backup_cached($user);
+$watch = ae_watch_get($site['domain']);
 $csrf = ae_csrf_token();
 $form = static function (string $action, string $label, string $class = 'button', string $extra = '') use ($h, $csrf, $user): string {
     return '<form method="post" class="site-action">'
@@ -182,6 +193,28 @@ ae_admin_head($site['domain'], $email, 'sites');
       <p>Not scored yet. The brain checks crawl access for Google, Bing and AI assistants, indexing, schema, llms.txt, speed and more.</p>
 <?php endif; ?>
       <?= $form('brain', $brain ? 'Rescore now' : 'Score this site', 'button ghost') ?>
+    </section>
+    <section class="site-card">
+      <h3>Site watch</h3>
+<?php if ($watch): ?>
+      <p><span class="pill pill-<?= ae_watch_tone($watch) ?>"><?= $h(ae_watch_label($watch)) ?></span> · checked <?= $h(gmdate('M j, H:i', (int)$watch['at'])) ?> UTC</p>
+      <p class="muted">Home page <?= $watch['page']['ok'] ? 'loaded in ' . (int)$watch['page']['ms'] . ' ms' : 'did not load' ?><?= $watch['file_count'] !== null ? ' · ' . (int)$watch['file_count'] . ' code files watched' . ($watch['truncated'] ? ' (large site, first ' . AE_WATCH_MAX_DIRS . ' folders)' : '') : ' · files not readable: ' . $h($watch['file_error']) ?> · normal since <?= $h(gmdate('M j', (int)$watch['baseline']['at'])) ?></p>
+<?php if ($watch['alerts']): ?>
+      <ul class="watch-list">
+      <?php foreach ($watch['alerts'] as $a): ?>
+        <li class="watch-<?= $h($a['kind']) ?>"><strong><?= $h($a['text']) ?></strong><?php if (!empty($a['items'])): ?><br><span class="muted watch-files"><?= $h(implode(', ', array_slice($a['items'], 0, 8))) ?><?= count($a['items']) > 8 ? ' …' : '' ?></span><?php endif; ?></li>
+      <?php endforeach; ?>
+      </ul>
+<?php endif; ?>
+<?php else: ?>
+      <p>Not checked yet. Each night the watch loads the home page and lists the site's code files, and emails you when spam, hidden scripts, or new or changed files show up.</p>
+<?php endif; ?>
+      <div class="card-buttons">
+        <?= $form('watch', 'Check now', 'button ghost') ?>
+<?php if ($watch && $watch['alerts']): ?>
+        <?= $form('watch_review', 'Mark reviewed', 'button ghost') ?>
+<?php endif; ?>
+      </div>
     </section>
     <section class="site-card">
       <h3>Backups</h3>
