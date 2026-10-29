@@ -88,7 +88,7 @@ $sites = array_values(array_filter($data['sites'], function ($s) use ($filter, $
     if ($filter === 'suspended' && !$s['suspended']) {
         return false;
     }
-    return $q === '' || str_contains($s['domain'] . ' ' . $s['user'] . ' ' . $s['email'], $q);
+    return $q === '' || str_contains($s['domain'] . ' ' . implode(' ', $s['other_domains'] ?? []) . ' ' . $s['user'] . ' ' . $s['email'], $q);
 }));
 $chip = static function (string $key, string $label) use ($filter, $q, $h): string {
     $href = '/admin/sites.php?f=' . $key . ($q !== '' ? '&q=' . rawurlencode($q) : '');
@@ -165,7 +165,7 @@ ae_admin_head('Client sites', $email, 'sites');
       <tbody>
       <?php foreach ($sites as $s): [$sslText, $sslTone] = $sslInfo($s['ssl']); $manage = '/admin/site.php?user=' . rawurlencode($s['user']); ?>
         <tr>
-          <td><a href="<?= $h($manage) ?>"><strong><?= $h($s['domain']) ?></strong></a><br><span class="muted"><?= $h($s['user']) ?><?= $s['email'] !== '' ? ' · ' . $h($s['email']) : '' ?></span></td>
+          <td><a href="<?= $h($manage) ?>"><strong><?= $h($s['domain']) ?></strong></a><br><span class="muted"><?= $h($s['user']) ?><?= $s['email'] !== '' ? ' · ' . $h($s['email']) : '' ?></span><?php if (!empty($s['other_domains'])): ?><br><span class="muted">Also: <?= $h(implode(', ', $s['other_domains'])) ?></span><?php endif; ?></td>
           <td><?= $h($s['plan']) ?></td>
           <td><?php if ($s['suspended']): ?><span class="pill pill-bad" title="<?= $h($s['suspend_reason']) ?>">Suspended</span><?php elseif (isset($issues[$s['user']])): ?><span class="pill pill-warn">Needs attention</span><?php else: ?><span class="pill pill-ok">Live</span><?php endif; ?></td>
           <td class="nowrap"><span class="pill pill-<?= $sslTone ?>"><?= $h($sslText) ?></span></td>
