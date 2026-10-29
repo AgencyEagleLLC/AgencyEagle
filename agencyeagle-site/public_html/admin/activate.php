@@ -86,17 +86,17 @@ $plan = [
     ['Install the client /admin', 'Their /admin opens the Agency Eagle portal: Google sign-in for their email, SEO brain, backups and Site Brief.'],
     ['Start SSL', 'Runs AutoSSL now. The certificate is issued as soon as the domain points here.'],
     ['Point the domain', 'Set the A record to ' . AE_SERVER_IP . ' and www as a CNAME at the client\'s DNS host.'],
-    ['Go live and welcome the client', 'First backup, first SEO score, submit to Google and Bing, email the client their /admin link.'],
+    ['Go live and welcome the client', 'Once DNS points here, the site\'s Go live card announces it to search engines, runs the first SEO score, site watch and backup, and emails the client their /admin link.'],
 ];
 $state = static function (int $i) use ($did, $steps): array {
-    // Steps 0-3 run here; 4 waits on the client's DNS; 5 is the next build.
+    // Steps 0-3 run here; 4 waits on the client's DNS; 5 happens on the site page once DNS is set.
     if ($i <= 3 && isset($did[$i])) {
         return $did[$i] === 'ok' ? ['done', '✓'] : ['warn', '!'];
     }
     if ($i === 4 && $steps) {
         return ['next', (string)($i + 1)];
     }
-    return [$i >= 5 ? 'soon' : 'todo', (string)($i + 1)];
+    return ['todo', (string)($i + 1)];
 };
 ae_admin_head('Activate a new site', $email, 'sites');
 ?>
