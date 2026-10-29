@@ -412,3 +412,8 @@ body.console { background: #f4f7fa; min-height: 100vh; }
 .golive-list li::before { position: absolute; left: 0; top: 0; width: 18px; height: 18px; border-radius: 50%; font-size: 12px; line-height: 18px; text-align: center; }
 .golive-list li.is-done::before { content: "✓"; background: #e3f4ea; color: #1d6b3c; }
 .golive-list li.is-todo::before { content: ""; border: 2px solid #c9d3dc; box-sizing: border-box; }
+.forms-thanks { max-width: 560px; padding-top: 80px; text-align: center; }
+.lead-list { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 8px; font-size: .92rem; overflow-wrap: anywhere; }
+.snippet { margin-top: 12px; }
+.snippet summary { cursor: pointer; font-weight: 600; color: var(--brand); }
+.snippet pre { background: #f4f7fa; border: 1px solid #dde5ec; border-radius: 8px; padding: 10px; overflow-x: auto; font-size: .78rem; white-space: pre; }

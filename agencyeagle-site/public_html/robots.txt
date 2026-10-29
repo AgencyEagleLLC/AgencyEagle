@@ -2,6 +2,7 @@
 User-agent: *
 Disallow: /admin/
 Disallow: /portal/
+Disallow: /forms/
 Disallow: /_private/
 
 Sitemap: https://agencyeagle.com/sitemap.xml

@@ -8,6 +8,7 @@ require_once __DIR__ . '/../_private/app/brain.php';
 require_once __DIR__ . '/../_private/app/backups.php';
 require_once __DIR__ . '/../_private/app/clients.php';
 require_once __DIR__ . '/../_private/app/golive.php';
+require_once __DIR__ . '/../_private/app/forms.php';
 
 $email = ae_require_admin();
 ae_send_security_headers();
@@ -24,6 +25,9 @@ if ($site === null) {
 }
 $protected = ae_whm_is_protected($user);
 $self = '/admin/site.php?user=' . rawurlencode($user);
+if (isset($_GET['csv'])) {
+    ae_forms_csv($site['domain']);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!ae_check_csrf()) {
@@ -146,6 +150,7 @@ $brain = ae_brain_get($site['domain']);
 $backups = ae_backup_cached($user);
 $watch = ae_watch_get($site['domain']);
 $golive = ae_golive_get($site['domain']);
+$leads = ae_forms_leads($site['domain'], 5);
 $dnsIps = @gethostbynamel($site['domain']) ?: [];
 $pointsHere = in_array(AE_SERVER_IP, $dnsIps, true);
 $csrf = ae_csrf_token();
@@ -272,6 +277,24 @@ ae_admin_head($site['domain'], $email, 'sites');
       <p>Google accounts that can sign in at <a href="https://<?= $h($site['domain']) ?>/admin" target="_blank" rel="noopener"><?= $h($site['domain']) ?>/admin</a> (the Agency Eagle portal) to see their SEO score, backups and Site Brief.</p>
       <?= $form('client_access', 'Save access', 'button ghost', '<label for="emails">Google emails, one per line</label><textarea id="emails" name="emails" rows="3">' . $h(implode("\n", ae_client_emails($site['domain']))) . '</textarea>') ?>
       <?= $form('install_admin', 'Install /admin link on their site', 'button ghost') ?>
+    </section>
+    <section class="site-card">
+      <h3>Form leads</h3>
+<?php if ($leads): ?>
+      <ul class="lead-list">
+      <?php foreach ($leads as $l): ?>
+        <li><strong><?= $h($l['name']) ?></strong> · <?= $h(gmdate('M j', (int)$l['at'])) ?> · <a href="mailto:<?= $h($l['email']) ?>"><?= $h($l['email']) ?></a><br><span class="muted">“<?= $h(mb_strimwidth($l['message'], 0, 90, '…')) ?>”</span></li>
+      <?php endforeach; ?>
+      </ul>
+      <a class="button ghost" href="<?= $h($self) ?>&csv=1">All leads (CSV)</a>
+<?php else: ?>
+      <p>No form messages yet.</p>
+<?php endif; ?>
+      <details class="snippet">
+        <summary>Add a contact form to the site</summary>
+        <p class="muted">Paste this HTML into any page. Messages are emailed to the client (Client portal access emails) and listed here.</p>
+        <pre><code><?= $h(ae_forms_snippet($site['domain'])) ?></code></pre>
+      </details>
     </section>
     <section class="site-card">
       <h3>Connect your AI</h3>
