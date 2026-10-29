@@ -7,7 +7,7 @@ require_once __DIR__ . '/../_private/app/admin_layout.php';
 require_once __DIR__ . '/../_private/app/brain.php';
 require_once __DIR__ . '/../_private/app/backups.php';
 require_once __DIR__ . '/../_private/app/clients.php';
-require_once __DIR__ . '/../_private/app/watch.php';
+require_once __DIR__ . '/../_private/app/golive.php';
 
 $email = ae_require_admin();
 ae_send_security_headers();
@@ -55,6 +55,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'watch_review':
                 ae_watch_review($email, $site);
                 ae_flash(['ok' => 'Marked reviewed. Today\'s pages and files are the new normal for ' . $site['domain'] . '.']);
+                break;
+            case 'announce':
+                if (!ae_golive_check($site)['dns']) {
+                    throw new RuntimeException($site['domain'] . ' doesn\'t point at this server yet (A record ' . AE_SERVER_IP . '), so nothing was announced.');
+                }
+                @set_time_limit(300);
+                ae_flash(['ok' => implode(' ', ae_golive_announce($email, $site))]);
+                break;
+            case 'welcome':
+                $to = ae_golive_welcome($email, $site);
+                ae_flash(['ok' => 'Welcome email sent to ' . implode(', ', $to) . '.']);
                 break;
             case 'backup':
                 ae_backup_start($email, $user, $site['email']);
@@ -134,6 +145,9 @@ $packages = ae_whm_packages();
 $brain = ae_brain_get($site['domain']);
 $backups = ae_backup_cached($user);
 $watch = ae_watch_get($site['domain']);
+$golive = ae_golive_get($site['domain']);
+$dnsIps = @gethostbynamel($site['domain']) ?: [];
+$pointsHere = in_array(AE_SERVER_IP, $dnsIps, true);
 $csrf = ae_csrf_token();
 $form = static function (string $action, string $label, string $class = 'button', string $extra = '') use ($h, $csrf, $user): string {
     return '<form method="post" class="site-action">'
@@ -234,6 +248,23 @@ ae_admin_head($site['domain'], $email, 'sites');
         <?= $form('backup', 'Back up now') ?>
         <?= $form('backups_refresh', 'Refresh list', 'button ghost') ?>
         <?= $form('login', 'Download in cPanel', 'button ghost', '<input type="hidden" name="app" value="backups">') ?>
+      </div>
+    </section>
+    <section class="site-card">
+      <h3>Go live</h3>
+      <ul class="golive-list">
+        <li class="<?= $pointsHere ? 'is-done' : 'is-todo' ?>"><?= $pointsHere ? 'Domain points here' : 'Domain doesn\'t point here yet' . ($dnsIps ? ' (' . $h(implode(', ', $dnsIps)) . ')' : ' (no A record found)') ?></li>
+        <li class="<?= !empty($golive['announced_at']) ? 'is-done' : 'is-todo' ?>"><?= !empty($golive['announced_at']) ? 'Announced to search engines ' . $h(gmdate('M j, Y', (int)$golive['announced_at'])) . ' (' . (int)$golive['announced_urls'] . ' pages)' : 'Not announced to search engines yet' ?></li>
+        <li class="<?= !empty($golive['welcomed_at']) ? 'is-done' : 'is-todo' ?>"><?= !empty($golive['welcomed_at']) ? 'Welcome email sent ' . $h(gmdate('M j, Y', (int)$golive['welcomed_at'])) . ' to ' . $h(implode(', ', $golive['welcomed_to'])) : 'Welcome email not sent yet' ?></li>
+      </ul>
+<?php if (!$pointsHere): ?>
+      <p class="muted">Set the A record to <?= $h(AE_SERVER_IP) ?> and www as a CNAME at the client's DNS host. This card updates on its own once it resolves.</p>
+<?php endif; ?>
+      <div class="card-buttons">
+<?php if ($pointsHere): ?>
+        <?= $form('announce', !empty($golive['announced_at']) ? 'Announce again' : 'Announce to search engines', !empty($golive['announced_at']) ? 'button ghost' : 'button') ?>
+<?php endif; ?>
+        <?= $form('welcome', !empty($golive['welcomed_at']) ? 'Resend welcome email' : 'Send welcome email', 'button ghost') ?>
       </div>
     </section>
     <section class="site-card">

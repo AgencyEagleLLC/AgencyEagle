@@ -138,6 +138,7 @@ jobs:
             _private/data/brain/**
             _private/data/backups/**
             _private/data/watch/**
+            _private/data/golive/**
             _private/data/nightly.lock
             _private/data/*.log
 

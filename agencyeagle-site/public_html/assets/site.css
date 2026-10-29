@@ -407,3 +407,8 @@ body.console { background: #f4f7fa; min-height: 100vh; }
 .watch-list li { padding: 8px 10px; border-radius: 8px; background: #fdf0e3; border-left: 4px solid #d9822b; overflow-wrap: anywhere; }
 .watch-list li.watch-hack, .watch-list li.watch-down { background: #fbeceb; border-left-color: var(--danger); }
 .watch-files { font-size: .85rem; }
+.golive-list { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 6px; }
+.golive-list li { padding-left: 26px; position: relative; overflow-wrap: anywhere; }
+.golive-list li::before { position: absolute; left: 0; top: 0; width: 18px; height: 18px; border-radius: 50%; font-size: 12px; line-height: 18px; text-align: center; }
+.golive-list li.is-done::before { content: "✓"; background: #e3f4ea; color: #1d6b3c; }
+.golive-list li.is-todo::before { content: ""; border: 2px solid #c9d3dc; box-sizing: border-box; }
