@@ -5,6 +5,7 @@ require_once __DIR__ . '/../_private/app/auth.php';
 require_once __DIR__ . '/../_private/app/clients.php';
 require_once __DIR__ . '/../_private/app/brief.php';
 require_once __DIR__ . '/../_private/app/admin_layout.php';
+require_once __DIR__ . '/../_private/app/watch.php';
 
 $email = ae_require_portal();
 ae_send_security_headers();
@@ -78,6 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $flash = ae_flash();
 $brain = ae_brain_get($domain);
 $backups = ae_backup_cached($site['user']);
+$watch = ae_watch_get($domain);
 $csrf = ae_csrf_token();
 $form = static function (string $action, string $label, string $class = 'button') use ($h, $csrf, $domain): string {
     return '<form method="post" class="site-action"><input type="hidden" name="csrf" value="' . $h($csrf) . '">'
@@ -136,6 +138,18 @@ ae_portal_head($domain, $email, $domain);
         <?= $form('download', 'Download a backup', 'button ghost') ?>
         <?= $form('backups_refresh', 'Refresh list', 'button ghost') ?>
       </div>
+    </section>
+    <section class="site-card">
+      <h3>Security watch</h3>
+<?php if ($watch === null): ?>
+      <p>Starting tonight, we check your site every night for downtime, injected spam, hidden scripts and changed code files.</p>
+<?php elseif (!$watch['alerts']): ?>
+      <p><span class="pill pill-ok">All clear</span></p>
+      <p>Last checked <?= $h(gmdate('M j', (int)$watch['at'])) ?>. Your home page loaded in <?= number_format($watch['page']['ms'] / 1000, 1) ?> seconds<?= $watch['file_count'] ? ' and ' . (int)$watch['file_count'] . ' code files match what we expect' : '' ?>.</p>
+<?php else: ?>
+      <p><span class="pill pill-<?= ae_watch_tone($watch) ?>">We're looking into something</span></p>
+      <p>Last night's check flagged a change on your site. Our team has been alerted and is reviewing it. If you or your developer changed the site recently, that's usually the reason. Let us know at <a href="mailto:help@agencyeagle.com">help@agencyeagle.com</a>.</p>
+<?php endif; ?>
     </section>
     <section class="site-card">
       <h3>Connect your AI</h3>

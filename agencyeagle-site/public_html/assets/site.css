@@ -403,3 +403,7 @@ body.console { background: #f4f7fa; min-height: 100vh; }
 .portal-site { text-decoration: none; color: var(--ink); }
 .portal-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
 .site-action textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); font: inherit; margin-bottom: 12px; }
+.watch-list { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 8px; }
+.watch-list li { padding: 8px 10px; border-radius: 8px; background: #fdf0e3; border-left: 4px solid #d9822b; overflow-wrap: anywhere; }
+.watch-list li.watch-hack, .watch-list li.watch-down { background: #fbeceb; border-left-color: var(--danger); }
+.watch-files { font-size: .85rem; }

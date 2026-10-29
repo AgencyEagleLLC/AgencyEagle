@@ -6,13 +6,20 @@ require_once __DIR__ . '/../_private/app/whm.php';
 require_once __DIR__ . '/../_private/app/admin_layout.php';
 require_once __DIR__ . '/../_private/app/brain.php';
 require_once __DIR__ . '/../_private/app/backups.php';
+require_once __DIR__ . '/../_private/app/nightly.php';
 
 $email = ae_require_admin();
 ae_send_security_headers();
 $h = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ae_check_csrf()) {
-    if (($_POST['action'] ?? '') === 'score_all') {
+    if (($_POST['action'] ?? '') === 'watch_all') {
+        // The nightly sweep without backups: site watch on every live site, plus stale SEO brains.
+        @set_time_limit(1200);
+        ignore_user_abort(true);
+        $run = ae_nightly_run(false);
+        ae_flash($run === null ? ['error' => 'A check is already running. Give it a few minutes.'] : ['ok' => 'Checked every live site in ' . (int)ceil($run['took'] / 60) . ' min. Anything new is listed under Needs attention' . (ae_admin_emails() ? ' and was emailed to you' : '') . '.']);
+    } elseif (($_POST['action'] ?? '') === 'score_all') {
         // Score every live site whose last check is over a week old (or never ran).
         @set_time_limit(600);
         ignore_user_abort(true);
@@ -54,6 +61,12 @@ foreach ($data['sites'] as $s) {
     $s['suspended'] ? $suspended++ : $active++;
     [$label, $tone, $days] = $sslInfo($s['ssl']);
     $br = ae_brain_get($s['domain']);
+    $wt = $s['suspended'] ? null : ae_watch_get($s['domain']);
+    foreach ($wt['alerts'] ?? [] as $a) {
+        if ($a['kind'] !== 'ssl') {
+            $issues[$s['user']][] = lcfirst($a['text']);
+        }
+    }
     if ($br && !$br['reached'] && !$s['suspended']) {
         $issues[$s['user']][] = 'the site didn\'t load for the SEO brain (' . $br['error'] . ')';
     }
@@ -90,6 +103,7 @@ foreach ($data['sites'] as $s) {
 }
 $scored = array_filter($brains, fn($b) => $b && $b['reached']);
 $avgScore = $scored ? (int)round(array_sum(array_column($scored, 'score')) / count($scored)) : null;
+$nightly = is_file(AE_NIGHTLY_LOG) ? json_decode((string)file_get_contents(AE_NIGHTLY_LOG), true) : null;
 $recent = array_slice(ae_whm_audit_entries(6), 0, 6);
 $csrf = ae_csrf_token();
 $flash = ae_flash();
@@ -132,6 +146,11 @@ ae_admin_head('Client sites', $email, 'sites');
       <div class="tool-buttons">
         <form method="post">
           <input type="hidden" name="csrf" value="<?= $h($csrf) ?>">
+          <input type="hidden" name="action" value="watch_all">
+          <button type="submit" class="button ghost small">Check all sites now</button>
+        </form>
+        <form method="post">
+          <input type="hidden" name="csrf" value="<?= $h($csrf) ?>">
           <input type="hidden" name="action" value="score_all">
           <button type="submit" class="button ghost small">Score all sites</button>
         </form>
@@ -144,7 +163,7 @@ ae_admin_head('Client sites', $email, 'sites');
 <?php if ($sites): ?>
     <div class="table-wrap">
     <table class="console-table">
-      <thead><tr><th>Site</th><th>Package</th><th>Status</th><th>SSL</th><th>SEO brain</th><th>Last backup</th><th>Disk</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Site</th><th>Package</th><th>Status</th><th>SSL</th><th>Watch</th><th>SEO brain</th><th>Last backup</th><th>Disk</th><th>Actions</th></tr></thead>
       <tbody>
       <?php foreach ($sites as $s): [$sslText, $sslTone] = $sslInfo($s['ssl']); $manage = '/admin/site.php?user=' . rawurlencode($s['user']); ?>
         <tr>
@@ -153,6 +172,7 @@ ae_admin_head('Client sites', $email, 'sites');
           <td><?php if ($s['suspended']): ?><span class="pill pill-bad" title="<?= $h($s['suspend_reason']) ?>">Suspended</span><?php elseif (isset($issues[$s['user']])): ?><span class="pill pill-warn">Needs attention</span><?php else: ?><span class="pill pill-ok">Live</span><?php endif; ?></td>
           <td class="nowrap"><span class="pill pill-<?= $sslTone ?>"><?= $h($sslText) ?></span></td>
           <?php $b = $brains[$s['domain']]; $bk = ae_backup_cached($s['user']); ?>
+          <td class="nowrap"><?php $wt = $s['suspended'] ? null : ae_watch_get($s['domain']); ?><span class="pill pill-<?= ae_watch_tone($wt) ?>"><?= $h(ae_watch_label($wt)) ?></span></td>
           <td class="nowrap"><?php if ($b && !$b['reached']): ?><span class="pill pill-bad" title="<?= $h($b['error']) ?>">Can't reach</span><?php elseif ($b): ?><span class="pill pill-<?= ae_brain_tone($b) ?>"><?= (int)$b['score'] ?>/100</span><?php else: ?><span class="muted">Not scored</span><?php endif; ?></td>
           <td class="nowrap"><?php if ($bk && $bk['files']): ?><?= $h(gmdate('M j, Y', $bk['files'][0]['at'])) ?><?php elseif ($bk): ?><span class="muted">None</span><?php else: ?><span class="muted">Not checked</span><?php endif; ?></td>
           <td class="nowrap"><?= $h($s['disk_used']) ?></td>
@@ -195,6 +215,6 @@ ae_admin_head('Client sites', $email, 'sites');
     </div>
   </section>
 <?php if ($data['fetched']): ?>
-  <p class="muted small-print">Read from WHM <?= $h(gmdate('M j, H:i', (int)$data['fetched'])) ?> UTC · <?= count($data['sites']) ?> accounts</p>
+  <p class="muted small-print">Read from WHM <?= $h(gmdate('M j, H:i', (int)$data['fetched'])) ?> UTC · <?= count($data['sites']) ?> accounts · <?= is_array($nightly) ? 'last full check ' . $h(gmdate('M j, H:i', (int)$nightly['at'])) . ' UTC' : 'no full check yet' ?></p>
 <?php endif; ?>
 <?php ae_admin_foot();
