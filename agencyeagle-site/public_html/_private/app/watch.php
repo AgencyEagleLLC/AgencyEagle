@@ -132,7 +132,9 @@ function ae_watch_alerts(array $w, ?array $site): array
     $a = [];
     $page = $w['page'];
     $base = $w['baseline'];
-    if (!$page['ok']) {
+    if (isset($w['elsewhere'])) {
+        // Not served from here: no page checks (see ae_watch_check).
+    } elseif (!$page['ok']) {
         $a[] = ['key' => 'down', 'kind' => 'down', 'text' => 'Home page didn\'t load (' . $page['error'] . ')'];
     } else {
         if ($new = array_values(array_diff($page['spam'], $base['spam']))) {
@@ -189,7 +191,12 @@ function ae_watch_alerts(array $w, ?array $site): array
 function ae_watch_check(array $site, float $seconds = 0): array
 {
     $prev = ae_watch_get($site['domain']);
-    $page = ae_watch_page($site['domain']);
+    // A domain whose DNS points somewhere else (or nowhere) is served by another host: its home
+    // page says nothing about this account, so only the files here are watched.
+    $ips = @gethostbynamel($site['domain']) ?: [];
+    $elsewhere = in_array(AE_SERVER_IP, $ips, true) ? null : $ips;
+    $page = $elsewhere === null ? ae_watch_page($site['domain'])
+        : ['ok' => true, 'status' => 0, 'ms' => 0, 'error' => '', 'spam' => [], 'hosts' => [], 'js' => [], 'iframes' => 0];
     $files = null;
     $dirs = [];
     $truncated = false;
@@ -234,6 +241,7 @@ function ae_watch_check(array $site, float $seconds = 0): array
         'user' => $site['user'],
         'at' => time(),
         'page' => $page,
+        'elsewhere' => $elsewhere,
         'files' => $files,
         'dirs' => $dirs,
         'file_count' => $files === null ? null : count($files),
@@ -280,7 +288,7 @@ function ae_watch_tone(?array $w): string
     if (in_array('hack', $kinds, true) || in_array('down', $kinds, true)) {
         return 'bad';
     }
-    return $kinds ? 'warn' : 'ok';
+    return $kinds ? 'warn' : (isset($w['elsewhere']) ? 'info' : 'ok');
 }
 
 function ae_watch_label(?array $w): string
@@ -289,6 +297,9 @@ function ae_watch_label(?array $w): string
         return 'Not checked';
     }
     $n = count($w['alerts']);
+    if ($n === 0 && isset($w['elsewhere'])) {
+        return $w['elsewhere'] ? 'Hosted elsewhere' : 'No DNS';
+    }
     return $n === 0 ? 'All clear' : $n . ' alert' . ($n === 1 ? '' : 's');
 }
 
