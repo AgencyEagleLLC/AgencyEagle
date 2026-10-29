@@ -150,7 +150,7 @@ ae_portal_head($domain, $email, $domain);
       <p>Starting tonight, we check your site every night for downtime, injected spam, hidden scripts and changed code files.</p>
 <?php elseif (!$watch['alerts']): ?>
       <p><span class="pill pill-ok">All clear</span></p>
-      <p>Last checked <?= $h(gmdate('M j', (int)$watch['at'])) ?>. Your home page loaded in <?= number_format($watch['page']['ms'] / 1000, 1) ?> seconds<?= $watch['file_count'] ? ' and ' . (int)$watch['file_count'] . ' code files match what we expect' : '' ?>.</p>
+      <p>Last checked <?= $h(gmdate('M j', (int)$watch['at'])) ?>. <?= isset($watch['elsewhere']) ? 'Your domain points to another host, so we watch the files we keep for you here' : 'Your home page loaded in ' . number_format($watch['page']['ms'] / 1000, 1) . ' seconds' ?><?= $watch['file_count'] ? ' and ' . (int)$watch['file_count'] . ' code files match what we expect' : '' ?>.</p>
 <?php else: ?>
       <p><span class="pill pill-<?= ae_watch_tone($watch) ?>">We're looking into something</span></p>
       <p>Last night's check flagged a change on your site. Our team has been alerted and is reviewing it. If you or your developer changed the site recently, that's usually the reason. Let us know at <a href="mailto:help@agencyeagle.com">help@agencyeagle.com</a>.</p>

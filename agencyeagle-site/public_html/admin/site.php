@@ -222,7 +222,7 @@ ae_admin_head($site['domain'], $email, 'sites');
       <h3>Site watch</h3>
 <?php if ($watch): ?>
       <p><span class="pill pill-<?= ae_watch_tone($watch) ?>"><?= $h(ae_watch_label($watch)) ?></span> · checked <?= $h(gmdate('M j, H:i', (int)$watch['at'])) ?> UTC</p>
-      <p class="muted">Home page <?= $watch['page']['ok'] ? 'loaded in ' . (int)$watch['page']['ms'] . ' ms' : 'did not load' ?><?= $watch['file_count'] !== null ? ' · ' . (int)$watch['file_count'] . ' code files watched' . ($watch['truncated'] ? ' (large site, first ' . AE_WATCH_MAX_DIRS . ' folders)' : '') : ' · files not readable: ' . $h($watch['file_error']) ?> · normal since <?= $h(gmdate('M j', (int)$watch['baseline']['at'])) ?></p>
+      <p class="muted"><?= isset($watch['elsewhere']) ? ($watch['elsewhere'] ? 'DNS points to ' . $h(implode(', ', $watch['elsewhere'])) . ', not this server, so only the files here are watched' : 'No DNS record, so only the files here are watched') : 'Home page ' . ($watch['page']['ok'] ? 'loaded in ' . (int)$watch['page']['ms'] . ' ms' : 'did not load') ?><?= $watch['file_count'] !== null ? ' · ' . (int)$watch['file_count'] . ' code files watched' . ($watch['truncated'] ? ' (large site, first ' . AE_WATCH_MAX_DIRS . ' folders)' : '') : ' · files not readable: ' . $h($watch['file_error']) ?> · normal since <?= $h(gmdate('M j', (int)$watch['baseline']['at'])) ?></p>
 <?php if ($watch['alerts']): ?>
       <ul class="watch-list">
       <?php foreach ($watch['alerts'] as $a): ?>
