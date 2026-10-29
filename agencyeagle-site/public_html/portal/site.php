@@ -6,6 +6,7 @@ require_once __DIR__ . '/../_private/app/clients.php';
 require_once __DIR__ . '/../_private/app/brief.php';
 require_once __DIR__ . '/../_private/app/admin_layout.php';
 require_once __DIR__ . '/../_private/app/watch.php';
+require_once __DIR__ . '/../_private/app/forms.php';
 
 $email = ae_require_portal();
 ae_send_security_headers();
@@ -28,6 +29,9 @@ if ($site === null) {
     exit;
 }
 $self = '/portal/site.php?d=' . rawurlencode($domain);
+if (isset($_GET['csv'])) {
+    ae_forms_csv($domain);
+}
 
 /** Once per $seconds per site and action, so a client can't hammer the server. Returns seconds left to wait. */
 $limit = static function (string $key, int $seconds): int {
@@ -80,6 +84,7 @@ $flash = ae_flash();
 $brain = ae_brain_get($domain);
 $backups = ae_backup_cached($site['user']);
 $watch = ae_watch_get($domain);
+$leads = ae_forms_leads($domain, 5);
 $csrf = ae_csrf_token();
 $form = static function (string $action, string $label, string $class = 'button') use ($h, $csrf, $domain): string {
     return '<form method="post" class="site-action"><input type="hidden" name="csrf" value="' . $h($csrf) . '">'
@@ -150,6 +155,24 @@ ae_portal_head($domain, $email, $domain);
       <p><span class="pill pill-<?= ae_watch_tone($watch) ?>">We're looking into something</span></p>
       <p>Last night's check flagged a change on your site. Our team has been alerted and is reviewing it. If you or your developer changed the site recently, that's usually the reason. Let us know at <a href="mailto:help@agencyeagle.com">help@agencyeagle.com</a>.</p>
 <?php endif; ?>
+    </section>
+    <section class="site-card">
+      <h3>Form leads</h3>
+<?php if ($leads): ?>
+      <ul class="lead-list">
+      <?php foreach ($leads as $l): ?>
+        <li><strong><?= $h($l['name']) ?></strong> · <?= $h(gmdate('M j', (int)$l['at'])) ?> · <a href="mailto:<?= $h($l['email']) ?>"><?= $h($l['email']) ?></a><br><span class="muted">“<?= $h(mb_strimwidth($l['message'], 0, 90, '…')) ?>”</span></li>
+      <?php endforeach; ?>
+      </ul>
+      <a class="button ghost" href="<?= $h($self) ?>&csv=1">All leads (CSV)</a>
+<?php else: ?>
+      <p>No form messages yet. Messages from the contact form on your site land here and in your email.</p>
+<?php endif; ?>
+      <details class="snippet">
+        <summary>Add a contact form to the site</summary>
+        <p class="muted">Paste this HTML into any page. Messages are emailed to you and listed here.</p>
+        <pre><code><?= $h(ae_forms_snippet($domain)) ?></code></pre>
+      </details>
     </section>
     <section class="site-card">
       <h3>Connect your AI</h3>

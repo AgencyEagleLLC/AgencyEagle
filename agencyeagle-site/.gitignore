@@ -12,3 +12,4 @@ public_html/_private/data/watch/
 public_html/_private/data/nightly.lock
 public_html/_private/data/*.log
 public_html/_private/data/golive/
+public_html/_private/data/forms/
