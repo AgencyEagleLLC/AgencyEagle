@@ -62,28 +62,7 @@ function ae_nightly_run(bool $full, bool $email = true): ?array
     }
 
     if ($newAlerts && $email) {
-        $body = "Site watch found something new on " . count($newAlerts) . " site" . (count($newAlerts) === 1 ? '' : 's') . ":\n\n";
-        foreach ($newAlerts as $d => $list) {
-            $body .= $d . "\n";
-            foreach ($list as $a) {
-                $body .= '  - ' . $a['text'] . "\n";
-                foreach (array_slice($a['items'] ?? [], 0, 10) as $item) {
-                    $body .= '      ' . $item . "\n";
-                }
-            }
-            $body .= "\n";
-        }
-        $body .= "Review them at https://agencyeagle.com/admin/sites.php?f=attention\n"
-            . "If a change was yours, open the site and click \"Mark reviewed\" so it becomes the new normal.\n";
-        $hack = false;
-        foreach ($newAlerts as $list) {
-            $hack = $hack || in_array('hack', array_column($list, 'kind'), true);
-        }
-        $subject = ($hack ? 'Possible hack: ' : 'Site watch: ') . implode(', ', array_keys($newAlerts));
-        foreach (ae_admin_emails() as $to) {
-            ae_mail($to, $subject, $body);
-        }
-        $lines[] = 'Emailed alerts to ' . count(ae_admin_emails()) . ' admin(s)';
+        $lines[] = 'Emailed alerts to ' . ae_watch_email($newAlerts) . ' admin(s)';
     }
 
     $run = ['at' => $started, 'took' => time() - $started, 'full' => $full, 'lines' => $lines];

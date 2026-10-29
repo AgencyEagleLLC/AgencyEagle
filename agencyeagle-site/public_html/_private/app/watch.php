@@ -14,6 +14,7 @@ const AE_WATCH_DIR = __DIR__ . '/../data/watch';
 const AE_WATCH_EXT = '/(\.(php\d?|phtml|phar|inc|js|html?|cgi|pl|py|sh|ini|suspected)|^\.htaccess|^\.user\.ini)$/i';
 const AE_WATCH_SKIP = '#(^|/)(\.git|node_modules|cache|\.well-known|wp-content/uploads|wp-content/cache|wp-content/upgrade|error_log)(/|$)#';
 const AE_WATCH_MAX_DIRS = 800;
+const AE_WATCH_WEB_SECONDS = 35.0; // file-walk budget inside a web request (the proxy gives up at about 60s)
 const AE_WATCH_SPAM = [
     'viagra', 'cialis', 'levitra', 'casino', 'poker online', 'slot gacor', 'slot online', 'togel', 'bokep',
     'porn', 'payday loan', 'replica watches', 'essay writing', 'buy followers', 'crack download',
@@ -87,18 +88,22 @@ function ae_watch_parse(string $domain, array $r): array
 }
 
 /**
- * Code files under public_html: ['files' => [relpath => "size:mtime"], 'truncated' => bool].
- * Walks folders one API call at a time, skipping uploads and caches.
+ * Code files under public_html: ['files' => [relpath => "size:mtime"], 'dirs' => [walked folders], 'truncated' => bool].
+ * Walks folders one API call at a time, skipping uploads and caches. $seconds > 0 stops early
+ * (web requests are cut off at about a minute); 'dirs' says which folders were covered.
  */
-function ae_watch_files(string $user): array
+function ae_watch_files(string $user, float $seconds = 0): array
 {
+    $stop = $seconds > 0 ? microtime(true) + $seconds : INF;
     $root = '/home/' . $user . '/public_html';
     $queue = [''];
     $files = [];
     $calls = 0;
-    while ($queue && $calls < AE_WATCH_MAX_DIRS) {
+    $dirs = [];
+    while ($queue && $calls < AE_WATCH_MAX_DIRS && microtime(true) < $stop) {
         $rel = array_shift($queue);
         $calls++;
+        $dirs[] = $rel;
         $res = ae_uapi($user, 'Fileman', 'list_files', ['dir' => $root . ($rel === '' ? '' : '/' . $rel), 'include_mime' => 0, 'show_hidden' => 1]);
         foreach ((array)($res['data'] ?? []) as $f) {
             $name = (string)($f['file'] ?? '');
@@ -117,7 +122,8 @@ function ae_watch_files(string $user): array
         }
     }
     ksort($files);
-    return ['files' => $files, 'truncated' => (bool)$queue];
+    sort($dirs);
+    return ['files' => $files, 'dirs' => $dirs, 'truncated' => (bool)$queue];
 }
 
 /** Alerts from today's state against the reviewed baseline. Each: ['key', 'kind', 'text', 'items'?]. */
@@ -144,7 +150,12 @@ function ae_watch_alerts(array $w, ?array $site): array
     }
     if ($w['files'] !== null && $base['files'] !== null) {
         $added = $changed = [];
+        $covered = isset($base['dirs']) ? array_flip($base['dirs']) : null;
         foreach ($w['files'] as $path => $sig) {
+            $dir = str_contains($path, '/') ? substr($path, 0, strrpos($path, '/')) : '';
+            if ($covered !== null && !isset($covered[$dir])) {
+                continue; // the baseline walk never reached this folder, so nothing to compare with
+            }
             if (!isset($base['files'][$path])) {
                 $added[] = $path;
             } elseif ($base['files'][$path] !== $sig) {
@@ -169,16 +180,18 @@ function ae_watch_alerts(array $w, ?array $site): array
  * Check one site now and save it. Returns the saved record plus 'new' (alerts not seen on the last check).
  * The first check of a site becomes its baseline.
  */
-function ae_watch_check(array $site): array
+function ae_watch_check(array $site, float $seconds = 0): array
 {
     $prev = ae_watch_get($site['domain']);
     $page = ae_watch_page($site['domain']);
     $files = null;
+    $dirs = [];
     $truncated = false;
     $fileError = '';
     try {
-        $f = ae_watch_files($site['user']);
+        $f = ae_watch_files($site['user'], $seconds);
         $files = $f['files'];
+        $dirs = $f['dirs'];
         $truncated = $f['truncated'];
     } catch (RuntimeException $e) {
         $fileError = $e->getMessage();
@@ -192,8 +205,23 @@ function ae_watch_check(array $site): array
             'js' => $page['ok'] ? $page['js'] : [],
             'iframes' => $page['ok'] ? $page['iframes'] : 0,
             'files' => $files,
+            'dirs' => $dirs,
             'by' => 'first check',
         ];
+    } elseif ($files !== null && isset($baseline['dirs'])) {
+        // Folders this walk reached for the first time join the baseline as they are now.
+        $known = array_flip($baseline['dirs']);
+        foreach ($dirs as $d) {
+            if (!isset($known[$d])) {
+                $baseline['dirs'][] = $d;
+                foreach ($files as $path => $sig) {
+                    if ((str_contains($path, '/') ? substr($path, 0, strrpos($path, '/')) : '') === $d) {
+                        $baseline['files'][$path] = $sig;
+                    }
+                }
+            }
+        }
+        sort($baseline['dirs']);
     }
     $w = [
         'domain' => $site['domain'],
@@ -201,6 +229,7 @@ function ae_watch_check(array $site): array
         'at' => time(),
         'page' => $page,
         'files' => $files,
+        'dirs' => $dirs,
         'file_count' => $files === null ? null : count($files),
         'truncated' => $truncated,
         'file_error' => $fileError,
@@ -227,6 +256,7 @@ function ae_watch_review(string $who, array $site): void
         'js' => $w['page']['ok'] ? $w['page']['js'] : $w['baseline']['js'],
         'iframes' => $w['page']['ok'] ? $w['page']['iframes'] : $w['baseline']['iframes'],
         'files' => $w['files'] ?? $w['baseline']['files'],
+        'dirs' => $w['files'] !== null ? ($w['dirs'] ?? []) : ($w['baseline']['dirs'] ?? []),
         'by' => $who,
     ];
     $w['alerts'] = ae_watch_alerts($w, $site);
@@ -254,6 +284,32 @@ function ae_watch_label(?array $w): string
     }
     $n = count($w['alerts']);
     return $n === 0 ? 'All clear' : $n . ' alert' . ($n === 1 ? '' : 's');
+}
+
+/** Email new alerts (['domain' => [alert, ...]]) to the admins. Returns how many were emailed. */
+function ae_watch_email(array $newAlerts): int
+{
+    require_once __DIR__ . '/quiz.php';
+    $body = "Site watch found something new on " . count($newAlerts) . " site" . (count($newAlerts) === 1 ? '' : 's') . ":\n\n";
+    $hack = false;
+    foreach ($newAlerts as $d => $list) {
+        $body .= $d . "\n";
+        foreach ($list as $a) {
+            $hack = $hack || $a['kind'] === 'hack';
+            $body .= '  - ' . $a['text'] . "\n";
+            foreach (array_slice($a['items'] ?? [], 0, 10) as $item) {
+                $body .= '      ' . $item . "\n";
+            }
+        }
+        $body .= "\n";
+    }
+    $body .= "Review them at https://agencyeagle.com/admin/sites.php?f=attention\n"
+        . "If a change was yours, open the site and click \"Mark reviewed\" so it becomes the new normal.\n";
+    $to = ae_admin_emails();
+    foreach ($to as $addr) {
+        ae_mail($addr, ($hack ? 'Possible hack: ' : 'Site watch: ') . implode(', ', array_keys($newAlerts)), $body);
+    }
+    return count($to);
 }
 
 /** Admin addresses for alert emails (the Google allowlist). */
