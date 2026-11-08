@@ -63,8 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ae_flash(['ok' => 'Marked reviewed. Today\'s pages and files are the new normal for ' . $site['domain'] . '.']);
                 break;
             case 'announce':
-                if (!ae_golive_check($site)['dns']) {
+                $live = ae_golive_check($site);
+                if (!$live['dns']) {
                     throw new RuntimeException($site['domain'] . ' doesn\'t point at this server yet (A record ' . AE_SERVER_IP . '), so nothing was announced.');
+                }
+                if ($live['noindex']) {
+                    throw new RuntimeException($site['domain'] . '\'s home page is still marked noindex (the splash page or a site not yet approved), so nothing was announced. Publish the approved site without noindex first.');
                 }
                 @set_time_limit(120);
                 session_write_close();

@@ -30,15 +30,17 @@ function ae_golive_put(string $domain, array $g): void
     file_put_contents(ae_golive_path($domain), json_encode($g), LOCK_EX);
 }
 
-/** Live checks: ['dns' => bool, 'www' => bool, 'ips' => [...], 'https' => bool, 'error' => string]. */
+/** Live checks: ['dns' => bool, 'www' => bool, 'ips' => [...], 'https' => bool, 'noindex' => bool, 'error' => string]. */
 function ae_golive_check(array $site): array
 {
     $ips = @gethostbynamel($site['domain']) ?: [];
     $www = @gethostbynamel('www.' . $site['domain']) ?: [];
-    $out = ['dns' => in_array(AE_SERVER_IP, $ips, true), 'www' => in_array(AE_SERVER_IP, $www, true), 'ips' => $ips, 'https' => false, 'error' => ''];
+    $out = ['dns' => in_array(AE_SERVER_IP, $ips, true), 'www' => in_array(AE_SERVER_IP, $www, true), 'ips' => $ips, 'https' => false, 'noindex' => false, 'error' => ''];
     if ($out['dns']) {
         $r = ae_safe_get('https://' . $site['domain'] . '/', 200_000);
         $out['https'] = $r['ok'] && str_starts_with($r['url'], 'https://');
+        // New sites (and the splash) ship noindex until the owner approves going public.
+        $out['noindex'] = $r['ok'] && preg_match('#<meta[^>]+name=["\']robots["\'][^>]*noindex#i', $r['body']) === 1;
         $out['error'] = $r['ok'] ? '' : ($r['error'] ?: 'HTTP ' . $r['status']);
     }
     return $out;
