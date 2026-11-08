@@ -245,6 +245,7 @@ function ae_splash_html(string $business, string $domain, string $email, string 
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
 <title>' . $h($business) . ' | New website coming soon</title>
 <meta name="description" content="' . $h($business) . ' has a new website on the way. Get in touch any time.">
 <link rel="canonical" href="https://' . $h($domain) . '/">
