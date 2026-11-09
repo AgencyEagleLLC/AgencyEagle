@@ -146,3 +146,89 @@ function ae_golive_welcome(string $who, array $site): array
     ae_whm_audit($who, 'welcome_email', $site['domain'], true, implode(', ', $to));
     return $to;
 }
+
+/**
+ * The new domain setup checks (docs/NEW-DOMAIN-SETUP.md steps 5, 6, 9 and 11), each one a row:
+ * ['label' => string, 'state' => 'done'|'todo'|'warn'|'info', 'detail' => string].
+ * Read-only: DNS lookups, one TLS handshake with this server and a few page loads.
+ */
+function ae_setup_checks(array $site): array
+{
+    $d = $site['domain'];
+    $rows = [];
+    $row = static function (string $label, string $state, string $detail = '') use (&$rows): void {
+        $rows[] = ['label' => $label, 'state' => $state, 'detail' => $detail];
+    };
+
+    $apex = @gethostbynamel($d) ?: [];
+    $www = @gethostbynamel('www.' . $d) ?: [];
+    $here = in_array(AE_SERVER_IP, $apex, true);
+    $row($d . ' points here', $here ? 'done' : 'todo', $here ? AE_SERVER_IP : ($apex ? 'Resolves to ' . implode(', ', $apex) . ', not ' . AE_SERVER_IP : 'No A record found'));
+    $wwwHere = in_array(AE_SERVER_IP, $www, true);
+    $row('www.' . $d . ' points here', $wwwHere ? 'done' : 'todo', $wwwHere ? AE_SERVER_IP : ($www ? 'Resolves to ' . implode(', ', $www) : 'No record found. Add www as a CNAME to ' . $d . '.'));
+
+    // Certificate: handshake with this server for the domain, verify the chain, read the expiry.
+    $cert = ae_setup_cert($d);
+    if ($cert['ok']) {
+        $days = (int)floor(($cert['expires'] - time()) / 86400);
+        $row('Valid SSL certificate', $days < 14 ? 'warn' : 'done', 'Issued by ' . $cert['issuer'] . ', expires ' . gmdate('M j, Y', $cert['expires']) . ' (' . $days . ' days)');
+    } else {
+        $row('Valid SSL certificate', 'todo', $cert['error'] . ' Run AutoSSL once both records point here.');
+    }
+
+    if ($here) {
+        $http = ae_safe_get('http://' . $d . '/', 200_000);
+        $redirects = $http['ok'] && str_starts_with($http['url'], 'https://');
+        $row('http:// sends visitors to https://', $redirects ? 'done' : 'todo', $redirects ? 'Lands on ' . $http['url'] : ($http['ok'] ? 'Stays on ' . $http['url'] : ($http['error'] ?: 'HTTP ' . $http['status'])));
+        $home = ae_safe_get('https://' . $d . '/', 300_000);
+        if ($home['ok']) {
+            $noindex = preg_match('#<meta[^>]+name=["\']robots["\'][^>]*noindex#i', $home['body']) === 1
+                || stripos($home['headers']['x-robots-tag'] ?? '', 'noindex') !== false;
+            $row('Search engines', 'info', $noindex ? 'Hidden (noindex). Keep it that way until the owner approves going live.' : 'Visible to search engines.');
+        }
+    }
+
+    $mx = @dns_get_record($d, DNS_MX) ?: [];
+    usort($mx, static fn($a, $b) => ($a['pri'] ?? 0) <=> ($b['pri'] ?? 0));
+    $hosts = array_map(static fn($r) => strtolower((string)$r['target']), $mx);
+    $row('Mail (MX) records', $hosts ? 'done' : 'todo', $hosts ? implode(', ', $hosts) : 'No MX records, so mail to @' . $d . ' bounces.');
+
+    $txt = @dns_get_record($d, DNS_TXT) ?: [];
+    $spf = array_values(array_filter(array_map(static fn($r) => (string)($r['txt'] ?? ''), $txt), static fn($t) => stripos($t, 'v=spf1') === 0));
+    if (count($spf) === 1) {
+        $row('SPF record', 'done', $spf[0]);
+    } elseif (count($spf) > 1) {
+        $row('SPF record', 'warn', 'There are ' . count($spf) . ' SPF records. Merge them into one or mail can fail SPF.');
+    } else {
+        $row('SPF record', 'todo', 'No SPF record, so mail from @' . $d . ' is more likely to land in spam.');
+    }
+
+    $dmarc = array_values(array_filter(array_map(static fn($r) => (string)($r['txt'] ?? ''), @dns_get_record('_dmarc.' . $d, DNS_TXT) ?: []), static fn($t) => stripos($t, 'v=DMARC1') === 0));
+    $row('DMARC record', $dmarc ? 'done' : 'warn', $dmarc ? $dmarc[0] : 'No DMARC record. Add one (start with p=none) once SPF and DKIM pass.');
+
+    return $rows;
+}
+
+/** TLS handshake with this server for $domain. Returns ['ok', 'expires', 'issuer', 'error']. */
+function ae_setup_cert(string $domain): array
+{
+    $ctx = stream_context_create(['ssl' => [
+        'peer_name' => $domain,
+        'verify_peer' => true,
+        'verify_peer_name' => true,
+        'capture_peer_cert' => true,
+        'SNI_enabled' => true,
+    ]]);
+    $fp = @stream_socket_client('ssl://' . AE_SERVER_IP . ':443', $errno, $errstr, 8, STREAM_CLIENT_CONNECT, $ctx);
+    if ($fp === false) {
+        return ['ok' => false, 'expires' => 0, 'issuer' => '', 'error' => 'No valid certificate for ' . $domain . ' yet.'];
+    }
+    $cert = stream_context_get_params($fp)['options']['ssl']['peer_certificate'] ?? null;
+    fclose($fp);
+    $info = $cert ? openssl_x509_parse($cert) : false;
+    if (!$info) {
+        return ['ok' => false, 'expires' => 0, 'issuer' => '', 'error' => 'Couldn\'t read the certificate.'];
+    }
+    $issuer = (string)($info['issuer']['O'] ?? $info['issuer']['CN'] ?? 'unknown');
+    return ['ok' => true, 'expires' => (int)$info['validTo_time_t'], 'issuer' => $issuer, 'error' => ''];
+}

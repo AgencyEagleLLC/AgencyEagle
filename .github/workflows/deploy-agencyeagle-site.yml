@@ -81,6 +81,13 @@ jobs:
               print("WHM secrets not set; /admin/sites.php will show setup instructions.")
           PY
 
+      # Rev stamp (docs/NEW-DOMAIN-SETUP.md): /rev.txt names the commit this deploy shipped, so
+      # anyone can tell in ten seconds whether the live site is the latest.
+      - name: Write rev stamp
+        run: |
+          printf '%s\n%s\n' "${GITHUB_SHA::7}" "$(date -u +%Y-%m-%dT%H:%MZ)" > agencyeagle-site/public_html/rev.txt
+          cat agencyeagle-site/public_html/rev.txt
+
       # Site watch on agencyeagle.com itself: list what this deploy ships (path and size), so the
       # admin's own code updates aren't reported as changed files.
       - name: Write deploy manifest
@@ -159,6 +166,17 @@ jobs:
             _private/data/forms/**
             _private/data/nightly.lock
             _private/data/*.log
+
+      - name: Check the deploy landed
+        run: |
+          want="${GITHUB_SHA::7}"
+          for i in 1 2 3 4 5; do
+            got=$(curl -fsS "https://agencyeagle.com/rev.txt?t=$(date +%s)" | head -1 || true)
+            if [ "$got" = "$want" ]; then echo "Live site is on $want."; exit 0; fi
+            echo "Live rev is '${got:-none}', want $want. Trying again in 10 seconds."; sleep 10
+          done
+          echo "::error::The live site isn't serving this deploy's rev.txt. Check the upload reached lagunait's public_html."
+          exit 1
 
       # Tell Bing (and the other IndexNow engines) the pages changed, instead of waiting for a crawl.
       # The key is public by design: it is served at /<key>.txt.

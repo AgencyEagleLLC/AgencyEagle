@@ -35,8 +35,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($packages && !in_array($in['pkg'], $packages, true)) {
         $error = 'Pick a package.';
     } else {
-        $user = $in['username'] !== '' ? $in['username'] : ae_username_for($in['domain']);
-        if (!preg_match('/^[a-z][a-z0-9]{0,15}$/', $user)) {
+        // Safe to run twice: if the domain already has an account here, keep it and only redo the
+        // steps that can't harm a live site (client access and AutoSSL).
+        $existing = null;
+        foreach (ae_whm_sites(true)['sites'] as $s) {
+            if ($s['domain'] === $in['domain'] || in_array($in['domain'], $s['other_domains'] ?? [], true)) {
+                $existing = $s;
+                break;
+            }
+        }
+        $user = $existing['user'] ?? ($in['username'] !== '' ? $in['username'] : ae_username_for($in['domain']));
+        if ($existing !== null) {
+            $pw = null;
+            $steps[] = ['ok', $in['domain'] . ' already has the cPanel account ' . $user . '. Kept it as it is (no new password).'];
+            $steps[] = ['ok', 'Left the site\'s files alone, so no splash page was published over them.'];
+            ae_client_set_emails($in['domain'], array_values(array_unique(array_merge(ae_client_emails($in['domain']), [$in['contact']]))));
+            $steps[] = ['ok', $in['contact'] . ' can sign in at ' . $in['domain'] . '/admin. Install the /admin link from the site page if it isn\'t there.'];
+            try {
+                ae_whm_act($email, 'autossl', $user, 'start_autossl_check_for_one_user', ['username' => $user]);
+                $steps[] = ['ok', 'Started AutoSSL again.'];
+            } catch (RuntimeException $e) {
+                $steps[] = ['warn', 'AutoSSL not started: ' . $e->getMessage()];
+            }
+        } elseif (!preg_match('/^[a-z][a-z0-9]{0,15}$/', $user)) {
             $error = 'The cPanel username must start with a letter and use up to 16 lowercase letters and digits.';
         } else {
             $pw = ae_random_password();
@@ -116,8 +137,10 @@ ae_admin_head('Activate a new site', $email, 'sites');
         <li><span class="pill pill-<?= $tone === 'ok' ? 'ok' : 'warn' ?>"><?= $tone === 'ok' ? 'Done' : 'Check' ?></span> <?= $h($text) ?></li>
       <?php endforeach; ?>
       </ul>
+<?php if ($pw !== null): ?>
       <p><strong>cPanel password</strong> (copy it now; it isn't shown again or stored):</p>
       <p><code class="secret"><?= $h($pw) ?></code></p>
+<?php endif; ?>
       <p><a class="button" href="/admin/site.php?user=<?= $h(rawurlencode($user)) ?>">Manage <?= $h($in['domain']) ?></a> <a class="button ghost" href="/admin/activate.php">Activate another</a></p>
     </section>
 <?php else: ?>
