@@ -76,6 +76,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ae_session_start();
                 ae_flash(['ok' => implode(' ', $lines)]);
                 break;
+            case 'setup_checks':
+                @set_time_limit(90);
+                session_write_close();
+                $g = ae_golive_get($site['domain']);
+                $g['setup_checks'] = ae_setup_checks($site);
+                $g['setup_checked_at'] = time();
+                ae_golive_put($site['domain'], $g);
+                ae_session_start();
+                $open = count(array_filter($g['setup_checks'], static fn($r) => $r['state'] === 'todo'));
+                ae_flash(['ok' => 'Setup checks ran for ' . $site['domain'] . ': ' . ($open ? $open . ' still to do.' : 'everything required passes.')]);
+                break;
             case 'welcome':
                 $to = ae_golive_welcome($email, $site);
                 ae_flash(['ok' => 'Welcome email sent to ' . implode(', ', $to) . '.']);
@@ -262,6 +273,22 @@ ae_admin_head($site['domain'], $email, 'sites');
         <?= $form('backup', 'Back up now') ?>
         <?= $form('backups_refresh', 'Refresh list', 'button ghost') ?>
         <?= $form('login', 'Download in cPanel', 'button ghost', '<input type="hidden" name="app" value="backups">') ?>
+      </div>
+    </section>
+    <section class="site-card">
+      <h3>Setup checks</h3>
+<?php if (!empty($golive['setup_checks'])): ?>
+      <ul class="golive-list">
+      <?php foreach ($golive['setup_checks'] as $r): ?>
+        <li class="is-<?= $h($r['state']) ?>"><strong><?= $h($r['label']) ?></strong><?= $r['detail'] !== '' ? '<br><span class="muted">' . $h($r['detail']) . '</span>' : '' ?></li>
+      <?php endforeach; ?>
+      </ul>
+      <p class="muted">Checked <?= $h(gmdate('M j, Y H:i', (int)$golive['setup_checked_at'])) ?> UTC. The steps are in docs/NEW-DOMAIN-SETUP.md.</p>
+<?php else: ?>
+      <p>Checks DNS for the domain and www, the SSL certificate, the http to https redirect, noindex, and mail records (MX, SPF, DMARC).</p>
+<?php endif; ?>
+      <div class="card-buttons">
+        <?= $form('setup_checks', !empty($golive['setup_checks']) ? 'Check again' : 'Run setup checks', !empty($golive['setup_checks']) ? 'button ghost' : 'button') ?>
       </div>
     </section>
     <section class="site-card">
