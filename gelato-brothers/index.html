@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gelato Brothers | Brogato® Pour-Over Affogatos &amp; Farm-Fresh Waffle Chips | East Tennessee</title>
+<meta name="description" content="Authentic Italian-style gelato, Brogato® pour-over affogatos, and Brodallion® waffle chips scratch-baked with eggs from our own farm chickens and ducks. Talbott & Knoxville, TN.">
+<style>
+  :root{
+    --cream:#faf5ec;
+    --paper:#fffdf8;
+    --espresso:#3b2a20;
+    --mocha:#6b4f3a;
+    --caramel:#c98a3d;
+    --pistachio:#7a8b5c;
+    --line:#e5d9c6;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:Georgia,'Times New Roman',serif;
+    background:var(--cream);
+    color:var(--espresso);
+    line-height:1.7;
+  }
+  .sans{font-family:'Helvetica Neue',Arial,sans-serif}
+  .wrap{max-width:960px;margin:0 auto;padding:0 24px}
+
+  header{
+    background:var(--espresso);
+    color:var(--cream);
+    text-align:center;
+    padding:16px 24px;
+  }
+  header .brand{
+    font-size:1.05rem;
+    letter-spacing:.35em;
+    text-transform:uppercase;
+  }
+  header .brand small{display:block;font-size:.65rem;letter-spacing:.5em;color:var(--caramel);margin-top:4px}
+
+  .hero{
+    text-align:center;
+    padding:88px 24px 72px;
+    background:
+      radial-gradient(ellipse at top,#fff8ea 0%,var(--cream) 65%);
+  }
+  .hero h1{
+    font-size:clamp(2.1rem,5.5vw,3.4rem);
+    font-weight:normal;
+    font-style:italic;
+    max-width:18ch;
+    margin:0 auto 20px;
+  }
+  .hero p{
+    max-width:52ch;
+    margin:0 auto 32px;
+    font-size:1.1rem;
+    color:var(--mocha);
+  }
+  .btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .btn{
+    display:inline-block;
+    padding:13px 30px;
+    border:1.5px solid var(--espresso);
+    color:var(--espresso);
+    text-decoration:none;
+    letter-spacing:.15em;
+    text-transform:uppercase;
+    font-size:.78rem;
+  }
+  .btn.solid{background:var(--espresso);color:var(--cream)}
+  .btn:hover{background:var(--caramel);border-color:var(--caramel);color:var(--espresso)}
+
+  section{padding:72px 0}
+  section.alt{background:var(--paper);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .kicker{
+    letter-spacing:.4em;
+    text-transform:uppercase;
+    font-size:.72rem;
+    color:var(--caramel);
+    margin-bottom:14px;
+  }
+  h2{
+    font-size:clamp(1.6rem,3.5vw,2.3rem);
+    font-weight:normal;
+    margin-bottom:22px;
+    max-width:24ch;
+  }
+  .prose p{max-width:64ch;margin-bottom:1.1em}
+  .prose strong{color:var(--mocha)}
+
+  blockquote{
+    border-left:3px solid var(--caramel);
+    padding:6px 0 6px 22px;
+    font-style:italic;
+    font-size:1.25rem;
+    color:var(--mocha);
+    max-width:44ch;
+    margin:34px 0 8px;
+  }
+
+  ol.build{
+    counter-reset:step;
+    list-style:none;
+    max-width:56ch;
+    margin-top:26px;
+  }
+  ol.build li{
+    counter-increment:step;
+    padding:12px 0 12px 52px;
+    position:relative;
+    border-top:1px solid var(--line);
+  }
+  ol.build li::before{
+    content:counter(step);
+    position:absolute;left:0;top:12px;
+    width:32px;height:32px;
+    border:1.5px solid var(--caramel);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:.85rem;color:var(--caramel);
+  }
+
+  .facts{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:18px;
+    margin-top:34px;
+  }
+  .fact{
+    background:var(--cream);
+    border:1px solid var(--line);
+    padding:20px;
+    font-size:.92rem;
+  }
+  .fact .em{font-size:1.5rem;display:block;margin-bottom:8px}
+
+  .menu-cat{margin-bottom:46px}
+  .menu-cat h3{
+    font-size:1.25rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-weight:normal;
+    border-bottom:2px solid var(--espresso);
+    padding-bottom:8px;
+    margin-bottom:6px;
+  }
+  .menu-cat .lead{color:var(--mocha);font-style:italic;margin-bottom:16px;max-width:60ch}
+  .item{padding:12px 0;border-bottom:1px dotted var(--line)}
+  .item b{font-style:italic;font-weight:normal;font-size:1.05rem}
+  .item span{display:block;color:var(--mocha);font-size:.95rem}
+
+  footer{
+    background:var(--espresso);
+    color:var(--cream);
+    text-align:center;
+    padding:56px 24px;
+  }
+  footer .brand{letter-spacing:.35em;text-transform:uppercase;margin-bottom:14px}
+  footer p{color:#cdbfae;font-size:.9rem;max-width:52ch;margin:0 auto 6px}
+  footer a{color:var(--caramel);text-decoration:none}
+
+  .tricolore{display:flex;height:4px}
+  .tricolore span{flex:1}
+  .tricolore span:nth-child(1){background:#3d7a4b}
+  .tricolore span:nth-child(2){background:#f4efe4}
+  .tricolore span:nth-child(3){background:#b53a2e}
+  .motto{
+    font-style:italic;
+    color:var(--pistachio);
+    font-size:1.05rem;
+    margin-bottom:6px;
+  }
+</style>
+</head>
+<body>
+
+<header class="sans">
+  <div class="brand">Gelato Brothers<small>Brew Bros Coffee · East Tennessee</small></div>
+</header>
+<div class="tricolore" aria-hidden="true"><span></span><span></span><span></span></div>
+
+<div class="hero">
+  <p class="kicker sans">Small-batch gelato · Fresh-pulled espresso · Scratch-baked waffle chips</p>
+  <h1>Italy taught us. Tennessee raised us.</h1>
+  <p>Small-batch gelato, fresh-pulled espresso, and waffle chips scratch-baked
+     with eggs from our own farm — the European way of slowing down, served in
+     East Tennessee.</p>
+  <div class="btns sans">
+    <a class="btn solid" href="#menu">See the Menu</a>
+    <a class="btn" href="https://gelatobrothers.com/contact/">Book Us for Your Event</a>
+  </div>
+</div>
+
+<section id="brogato">
+  <div class="wrap prose">
+    <p class="kicker sans">Il Brogato® · Our Pour-Over Affogato</p>
+    <h2>The Brogato®: an Italian classic, poured our way</h2>
+    <p class="motto">Affogato — “drowned” — the way Italy has served dessert for generations.</p>
+    <p>In Italy, they call it the <em>affogato</em> — “drowned.” A scoop of
+       gelato, drowned in a hot shot of espresso, eaten slowly at a marble
+       counter while the whole afternoon waits for you. It’s dessert and coffee
+       and a small ceremony all at once, and Italians have been perfecting it
+       for generations.</p>
+    <p>We fell in love with it in the beachfront cafés of Europe, and we brought
+       it home with one promise: <strong>never rush the pour.</strong></p>
+    <p>Our version is the <strong>Brogato®</strong> — two scoops of
+       Stracciatella gelato (Madagascar vanilla bean laced with shards of mild
+       Italian chocolate), finished with a fresh-pulled crema espresso poured
+       over the top. The hot espresso melts into the cold gelato in ribbons,
+       the crema does the rest, and for about ninety seconds you understand
+       exactly why Italians never invented the to-go affogato.</p>
+    <p>Breakfast, lunch, dinner, or the excuse in between — the Brogato® is the
+       European sweet treat that works at any hour.</p>
+    <ol class="build">
+      <li>Two scoops of Stracciatella gelato, made in-house</li>
+      <li>A double shot of espresso, pulled fresh on our Italian machine</li>
+      <li>Poured over the top the moment it hits your hands — never before</li>
+      <li>Optional: a Brodallion® waffle chip on the side for scooping</li>
+    </ol>
+    <blockquote>“Affogato” means “drowned.” We just call it the best ninety
+      seconds of your day.</blockquote>
+  </div>
+</section>
+
+<section class="alt" id="brodallions">
+  <div class="wrap prose">
+    <p class="kicker sans">I Brodallions® · Our Signature Waffle Chips</p>
+    <h2>Baked from scratch. Laid this morning.</h2>
+    <p class="motto">Fatto a mano — handmade, from our coop to your cone.</p>
+    <p>Every Brodallion® — our signature waffle chip — starts the same way:
+       with a walk out to the coop.</p>
+    <p>We keep <strong>chickens and ducks right here on our family farm</strong>,
+       and their eggs go straight into our scratch-made waffle batter. No
+       cartons, no middleman, no mix. Farm eggs, real butter, Madagascar
+       vanilla, and a hot waffle iron — that’s the whole ingredient story. Duck
+       eggs run richer than chicken eggs, with bigger yolks and more fat, and
+       that’s what gives our chips their deep golden color and a
+       crisp-then-tender bite you can’t fake with anything from a box.</p>
+    <p>We bake them fresh in our Tennessee bakery, the same way the waffle
+       stands in Europe do it: small batches, all day, so the smell of hot
+       vanilla batter is part of the experience before you ever reach the
+       counter.</p>
+    <p>Crumble them over gelato. Dunk them in espresso. Use one as the only
+       spoon a Brogato® ever needed. Or just eat the whole sleeve in the car —
+       we won’t tell.</p>
+    <div class="facts sans">
+      <div class="fact"><span class="em">🥚</span>Farm-fresh chicken &amp; duck eggs from our own flock</div>
+      <div class="fact"><span class="em">🧇</span>Scratch-baked daily — never from a mix</div>
+      <div class="fact"><span class="em">🌿</span>Madagascar vanilla, real butter, simple ingredients</div>
+      <div class="fact"><span class="em">🇮🇹</span>The European waffle-stand tradition, made in Tennessee</div>
+    </div>
+    <blockquote>From our coop to your cone — the eggs in every Brodallion® were
+      laid by our own chickens and ducks at the farm.</blockquote>
+  </div>
+</section>
+
+<section id="menu">
+  <div class="wrap">
+    <p class="kicker sans">Il Menu · The Menu</p>
+    <h2>What’s at the counter</h2>
+
+    <div class="menu-cat">
+      <h3>Gelato</h3>
+      <p class="lead">Churned slow and served at true gelato temperature —
+        denser, silkier, and more flavorful than ice cream, exactly the way
+        Italy intended. Twelve unique flavors, always rotating. True to its
+        Italian roots — you’ll find a Nutella swirl here, never sprinkles.</p>
+      <div class="item"><b>Stracciatella</b><span>Madagascar vanilla bean gelato with shards of mild Italian chocolate</span></div>
+      <div class="item"><b>Dark Chocolate Chip</b><span>Smooth, dark, milky gelato embedded with Italian chocolate chunks</span></div>
+      <div class="item"><b>Sea Salt Caramel</b><span>Sea salt, caramel, sugar, and milk — soft and buttery</span></div>
+      <div class="item"><b>Pistachio</b><span>Real emulsified pistachios, sugar, and milk</span></div>
+      <div class="item"><b>Seasonal Flavors</b><span>Always rotating — ask what’s in the case today</span></div>
+    </div>
+
+    <div class="menu-cat">
+      <h3>The Brogato®</h3>
+      <div class="item"><b>Classic Brogato®</b><span>Two scoops of Stracciatella drowned in a fresh-pulled crema espresso, poured over at the counter</span></div>
+      <div class="item"><b>Build-Your-Own Brogato®</b><span>Pick any flavor in the case and we’ll do the pour</span></div>
+    </div>
+
+    <div class="menu-cat">
+      <h3>Brew Bros Coffee</h3>
+      <p class="lead">Pulled on our Italian espresso machine, one drink at a time.</p>
+      <div class="item"><b>Espresso</b><span>Single or double, with crema every time</span></div>
+      <div class="item"><b>Latte</b><span>With natural vanilla, hazelnut, or salted caramel shots</span></div>
+      <div class="item"><b>Cappuccino</b><span>The Italian ratio, no shortcuts</span></div>
+    </div>
+
+    <div class="menu-cat">
+      <h3>Brodallions® &amp; Waffle Cones</h3>
+      <div class="item"><b>Brodallions®</b><span>Our signature waffle chips, scratch-baked with farm-fresh chicken and duck eggs and Madagascar vanilla</span></div>
+      <div class="item"><b>Fresh-Baked Waffle Cones</b><span>Same scratch batter, rolled hot off the iron</span></div>
+      <div class="item"><b>Brodallion® Sleeves To Go</b><span>Take the bakery home</span></div>
+    </div>
+
+    <div class="menu-cat">
+      <h3>Catering &amp; Events</h3>
+      <p class="lead">Weddings, corporate events, and private parties across
+        Knoxville, Sevierville, and East Tennessee — full-service gelato carts,
+        espresso bars, and the dessert trailer. The European café experience,
+        brought to your venue.</p>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="story">
+  <div class="wrap prose">
+    <p class="kicker sans">La Nostra Storia · Our Story</p>
+    <h2>Two traditions, one counter</h2>
+    <p>It started with family summers on the European coast — espresso in the
+       air, waffle irons going all day, gelato cases glowing like stained
+       glass. We watched whole villages slow down for dessert, and we couldn’t
+       stop asking: why doesn’t home feel like this?</p>
+    <p>So we brought it back to East Tennessee — the recipes, the Italian
+       espresso machine, and the stubborn insistence on doing things the slow
+       way. Today that means gelato churned in small batches, espresso pulled
+       to order, and waffle chips baked from scratch with eggs gathered from
+       our own chickens and ducks at the farm.</p>
+    <p><strong>Italian craft. Tennessee farm.</strong></p>
+  </div>
+</section>
+
+<footer class="sans">
+  <div class="brand">Gelato Brothers</div>
+  <p>Talbott Flagship · 1149 US-11E A1, Talbott, TN 37877</p>
+  <p>Knoxville · West Town Mall</p>
+  <p><a href="https://gelatobrothers.com">gelatobrothers.com</a> ·
+     <a href="https://shop.gelatobrothers.com">shop.gelatobrothers.com</a></p>
+  <p style="font-style:italic;color:#a9987f">La dolce vita, servita fredda — the sweet life, served cold.</p>
+  <p>Brogato® and Brodallions® are registered trademarks of Gelato Brothers.</p>
+</footer>
+
+</body>
+</html>
